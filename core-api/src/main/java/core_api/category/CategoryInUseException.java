@@ -1,5 +1,5 @@
 package core_api.category;
 
 public class CategoryInUseException extends RuntimeException {
-    public CategoryInUseException() { super("Category is referenced by transactions"); }
+    public CategoryInUseException() { super("Category is referenced by transactions or budgets"); }
 }

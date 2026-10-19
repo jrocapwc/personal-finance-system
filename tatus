@@ -1,0 +1,42 @@
+core-api/bruno/02 Register.bru
+core-api/bruno/03 Login.bru
+core-api/bruno/04 Me.bru
+core-api/bruno/05 Missing JWT.bru
+core-api/bruno/06 Invalid JWT.bru
+core-api/bruno/07 List Categories.bru
+core-api/bruno/08 Income Categories.bru
+core-api/bruno/14 List Transactions.bru
+core-api/bruno/15 Filter Transactions.bru
+core-api/bruno/16 Get Transaction.bru
+core-api/bruno/20 Create Budget.bru
+core-api/bruno/21 List Budgets.bru
+core-api/bruno/22 Get Budget.bru
+core-api/bruno/23 Update Budget.bru
+core-api/bruno/24 Delete Budget.bru
+core-api/src/main/java/core_api/budget/Budget.java
+core-api/src/main/java/core_api/budget/BudgetController.java
+core-api/src/main/java/core_api/budget/BudgetNotFoundException.java
+core-api/src/main/java/core_api/budget/BudgetPeriod.java
+core-api/src/main/java/core_api/budget/BudgetRepository.java
+core-api/src/main/java/core_api/budget/BudgetRequest.java
+core-api/src/main/java/core_api/budget/BudgetResponse.java
+core-api/src/main/java/core_api/budget/BudgetService.java
+core-api/src/main/java/core_api/budget/BudgetStatus.java
+core-api/src/main/java/core_api/budget/BudgetUtilization.java
+core-api/src/main/java/core_api/budget/DuplicateBudgetException.java
+core-api/src/main/java/core_api/budget/InvalidBudgetRequestException.java
+core-api/src/main/java/core_api/category/CategoryController.java
+core-api/src/main/java/core_api/category/CategoryInUseException.java
+core-api/src/main/java/core_api/category/CategoryService.java
+core-api/src/main/java/core_api/config/OpenApiConfiguration.java
+core-api/src/main/java/core_api/error/ApiExceptionHandler.java
+core-api/src/main/java/core_api/transaction/TransactionRepository.java
+core-api/src/main/resources/db/migration/V4__create_budgets.sql
+core-api/src/test/java/core_api/CoreApiApplicationTests.java
+core-api/src/test/java/core_api/budget/BudgetIntegrationTests.java
+core-api/src/test/java/core_api/budget/BudgetServiceTests.java
+core-api/src/test/java/core_api/budget/BudgetUtilizationTests.java
+core-api/src/test/java/core_api/category/CategoryServiceTests.java
+core-api/src/test/java/core_api/migration/BudgetMigrationTests.java
+core-api/src/test/java/core_api/migration/TransactionMigrationTests.java
+core-api/src/test/java/core_api/migration/UserMigrationTests.java

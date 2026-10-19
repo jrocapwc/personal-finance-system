@@ -3,11 +3,17 @@ meta {
   type: http
   seq: 6
 }
+
 get {
   url: {{baseUrl}}/api/v1/users/me
   body: none
   auth: bearer
 }
+
 auth:bearer {
   token: invalid-token
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
 }

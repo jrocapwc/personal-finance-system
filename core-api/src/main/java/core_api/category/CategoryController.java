@@ -69,9 +69,9 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete my category", description = "Default categories may be deleted and will not be reseeded. Referenced categories cannot be deleted.")
+    @Operation(summary = "Delete my category", description = "Default categories may be deleted and will not be reseeded. Categories referenced by transactions or budgets cannot be deleted.")
     @ApiResponse(responseCode = "204", description = "Category deleted", content = @Content)
-    @ApiResponse(responseCode = "409", description = "Category is referenced by transactions",
+    @ApiResponse(responseCode = "409", description = "Category is referenced by transactions or budgets",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     @ApiResponse(responseCode = "404", description = "Category missing or owned by another user",
             content = @Content(schema = @Schema(implementation = ApiError.class)))

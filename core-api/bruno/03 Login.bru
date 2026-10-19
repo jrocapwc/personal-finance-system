@@ -3,17 +3,26 @@ meta {
   type: http
   seq: 3
 }
+
 post {
   url: {{baseUrl}}/api/v1/auth/login
   body: json
   auth: none
 }
+
 body:json {
   {
     "email": "{{email}}",
     "password": "{{password}}"
   }
 }
+
+vars:pre-request {
+  email: joseph.rocafort@pwc.com
+  password: #Password.com09:)
+  baseUrl: http://localhost:8080
+}
+
 script:post-response {
   if (res.status === 200) {
     bru.setVar("accessToken", res.body.accessToken);

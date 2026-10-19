@@ -1,6 +1,10 @@
 package core_api.error;
 
 import core_api.auth.DuplicateEmailException;
+import core_api.budget.BudgetNotFoundException;
+import core_api.budget.DuplicateBudgetException;
+import core_api.budget.InvalidBudgetRequestException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import core_api.category.CategoryNotFoundException;
 import core_api.category.CategoryInUseException;
 import core_api.transaction.TransactionNotFoundException;
@@ -95,7 +99,27 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(CategoryInUseException.class)
     ResponseEntity<ApiError> categoryInUse(HttpServletRequest request) {
-        return error(HttpStatus.CONFLICT, "CATEGORY_IN_USE", "Category is referenced by transactions; deletion and type changes are not allowed", request);
+        return error(HttpStatus.CONFLICT, "CATEGORY_IN_USE", "Category is referenced by transactions or budgets; deletion and type changes are not allowed", request);
+    }
+
+    @ExceptionHandler(BudgetNotFoundException.class)
+    ResponseEntity<ApiError> budgetNotFound(HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, "BUDGET_NOT_FOUND", "Budget not found", request);
+    }
+
+    @ExceptionHandler(DuplicateBudgetException.class)
+    ResponseEntity<ApiError> duplicateBudget(HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "DUPLICATE_BUDGET", "A budget already exists for this category, month, and year", request);
+    }
+
+    @ExceptionHandler(InvalidBudgetRequestException.class)
+    ResponseEntity<ApiError> invalidBudget(InvalidBudgetRequestException exception, HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    ResponseEntity<ApiError> missingParameter(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Required query parameter is missing", request);
     }
 
     @ExceptionHandler(Exception.class)

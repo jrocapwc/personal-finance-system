@@ -33,7 +33,7 @@ class TransactionMigrationTests {
                 marker.setObject(1, owner); marker.executeUpdate();
             }
         }
-        var flyway = Flyway.configure().dataSource(url, "sa", "").cleanDisabled(true).load();
+        var flyway = Flyway.configure().dataSource(url, "sa", "").target("3").cleanDisabled(true).load();
         assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, "sa", ""); var statement = connection.createStatement()) {

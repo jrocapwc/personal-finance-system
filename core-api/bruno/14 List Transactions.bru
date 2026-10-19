@@ -3,11 +3,17 @@ meta {
   type: http
   seq: 14
 }
+
 get {
   url: {{baseUrl}}/api/v1/transactions?page=0&size=20&sort=transactionDate&direction=DESC
   body: none
   auth: bearer
 }
+
 auth:bearer {
   token: {{accessToken}}
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
 }

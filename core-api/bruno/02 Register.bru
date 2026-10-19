@@ -3,15 +3,21 @@ meta {
   type: http
   seq: 2
 }
+
 post {
   url: {{baseUrl}}/api/v1/auth/register
   body: json
   auth: none
 }
+
 body:json {
   {
     "name": "{{name}}",
     "email": "{{email}}",
     "password": "{{password}}"
   }
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
 }
