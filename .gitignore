@@ -1,0 +1,52 @@
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Java / Maven / IDEs
+**/target/
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+.idea/
+*.iml
+*.iws
+*.ipr
+.classpath
+.project
+.settings/
+.factorypath
+.vscode/
+
+# Local Docker data (Compose uses named volumes)
+.docker/
+docker-data/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Node.js / Angular
+node_modules/
+.angular/
+.npm/
+dist/
+build/
+coverage/
+.cache/
+*.tsbuildinfo
+
+# Operating systems
+.DS_Store
+Thumbs.db
