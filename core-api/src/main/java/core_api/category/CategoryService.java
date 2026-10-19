@@ -1,6 +1,7 @@
 package core_api.category;
 
 import core_api.user.User;
+import core_api.transaction.TransactionRepository;
 import core_api.user.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,12 +20,14 @@ public class CategoryService {
     private static final List<String> EXPENSE_DEFAULTS = List.of(
             "Food", "Housing", "Transportation", "Entertainment", "Healthcare", "Other");
     private final CategoryRepository categories;
+    private final TransactionRepository transactions;
     private final UserRepository users;
     private final CategoryDefaultInitializationRepository initializations;
 
     public CategoryService(CategoryRepository categories, UserRepository users,
-                           CategoryDefaultInitializationRepository initializations) {
+                           CategoryDefaultInitializationRepository initializations, TransactionRepository transactions) {
         this.categories = categories;
+        this.transactions = transactions;
         this.users = users;
         this.initializations = initializations;
     }
@@ -52,6 +55,9 @@ public class CategoryService {
                 userId, request.type(), Category.normalizeName(request.name()), id)) {
             throw new DuplicateCategoryException();
         }
+        if (category.getType() != request.type() && transactions.existsByCategory_Id(id)) {
+            throw new CategoryInUseException();
+        }
         category.update(request.name(), request.type(), request.color());
         return save(category);
     }
@@ -59,6 +65,9 @@ public class CategoryService {
     public void delete(UUID userId, Long id) {
         lockUser(userId);
         var category = categories.findByIdAndUser_Id(id, userId).orElseThrow(CategoryNotFoundException::new);
+        if (transactions.existsByCategory_Id(id)) {
+            throw new CategoryInUseException();
+        }
         categories.delete(category);
         categories.flush();
     }

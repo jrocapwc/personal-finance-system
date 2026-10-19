@@ -1,0 +1,13 @@
+meta {
+  name: Get Transaction
+  type: http
+  seq: 16
+}
+get {
+  url: {{baseUrl}}/api/v1/transactions/{{transactionId}}
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

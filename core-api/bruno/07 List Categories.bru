@@ -11,3 +11,14 @@ get {
 auth:bearer {
   token: {{accessToken}}
 }
+
+script:post-response {
+  bru.deleteVar("incomeCategoryId");
+  bru.deleteVar("expenseCategoryId");
+  if (res.status === 200) {
+    const income = res.body.find(c => c.type === "INCOME" && c.name === "Salary") || res.body.find(c => c.type === "INCOME");
+    const expense = res.body.find(c => c.type === "EXPENSE" && c.name === "Food") || res.body.find(c => c.type === "EXPENSE");
+    if (income) bru.setVar("incomeCategoryId", income.id);
+    if (expense) bru.setVar("expenseCategoryId", expense.id);
+  }
+}

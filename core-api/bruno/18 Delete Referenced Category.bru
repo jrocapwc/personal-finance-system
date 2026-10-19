@@ -1,0 +1,13 @@
+meta {
+  name: Delete Referenced Category (expect 409)
+  type: http
+  seq: 18
+}
+delete {
+  url: {{baseUrl}}/api/v1/categories/{{expenseCategoryId}}
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

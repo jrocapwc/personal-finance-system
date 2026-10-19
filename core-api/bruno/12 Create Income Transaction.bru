@@ -1,0 +1,29 @@
+meta {
+  name: Create Income Transaction
+  type: http
+  seq: 12
+}
+post {
+  url: {{baseUrl}}/api/v1/transactions
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {
+    "categoryId": {{incomeCategoryId}},
+    "type": "INCOME",
+    "amount": 50000.00,
+    "description": "Monthly salary",
+    "transactionDate": "2026-10-19"
+  }
+}
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("incomeTransactionId", res.body.id);
+  } else {
+    bru.deleteVar("incomeTransactionId");
+  }
+}

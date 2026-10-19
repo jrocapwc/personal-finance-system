@@ -60,7 +60,7 @@ public class CategoryController {
     @Operation(summary = "Update my category", description = "Full replacement of name/type/color; omitted or null color clears it.")
     @ApiResponse(responseCode = "404", description = "Category missing or owned by another user",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
-    @ApiResponse(responseCode = "409", description = "Duplicate name within the same user and type",
+    @ApiResponse(responseCode = "409", description = "Duplicate name, or referenced category type cannot change",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     public CategoryResponse update(Authentication authentication, @PathVariable Long id,
                                    @Valid @RequestBody CategoryRequest request) {
@@ -69,8 +69,10 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete my category", description = "Default categories may also be deleted and will not be reseeded.")
+    @Operation(summary = "Delete my category", description = "Default categories may be deleted and will not be reseeded. Referenced categories cannot be deleted.")
     @ApiResponse(responseCode = "204", description = "Category deleted", content = @Content)
+    @ApiResponse(responseCode = "409", description = "Category is referenced by transactions",
+            content = @Content(schema = @Schema(implementation = ApiError.class)))
     @ApiResponse(responseCode = "404", description = "Category missing or owned by another user",
             content = @Content(schema = @Schema(implementation = ApiError.class)))
     public void delete(Authentication authentication, @PathVariable Long id) {

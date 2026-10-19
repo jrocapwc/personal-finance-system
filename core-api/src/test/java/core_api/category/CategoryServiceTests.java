@@ -1,6 +1,7 @@
 package core_api.category;
 
 import core_api.user.User;
+import core_api.transaction.TransactionRepository;
 import core_api.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTests {
     @Mock private CategoryRepository categories;
+    @Mock private TransactionRepository transactions;
     @Mock private UserRepository users;
     @Mock private CategoryDefaultInitializationRepository initializations;
     @InjectMocks private CategoryService service;

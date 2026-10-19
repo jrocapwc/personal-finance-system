@@ -1,0 +1,22 @@
+meta {
+  name: Update Transaction
+  type: http
+  seq: 17
+}
+put {
+  url: {{baseUrl}}/api/v1/transactions/{{transactionId}}
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {
+    "categoryId": {{expenseCategoryId}},
+    "type": "EXPENSE",
+    "amount": 150.75,
+    "description": "Updated groceries",
+    "transactionDate": "2026-10-20"
+  }
+}

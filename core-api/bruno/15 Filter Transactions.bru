@@ -1,0 +1,13 @@
+meta {
+  name: Filter Transactions
+  type: http
+  seq: 15
+}
+get {
+  url: {{baseUrl}}/api/v1/transactions?type=EXPENSE&categoryId={{expenseCategoryId}}&startDate=2026-10-01&endDate=2026-10-31&keyword=groceries&page=0&size=10&sort=amount&direction=ASC
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

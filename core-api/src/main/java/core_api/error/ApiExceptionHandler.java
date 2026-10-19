@@ -2,6 +2,9 @@ package core_api.error;
 
 import core_api.auth.DuplicateEmailException;
 import core_api.category.CategoryNotFoundException;
+import core_api.category.CategoryInUseException;
+import core_api.transaction.TransactionNotFoundException;
+import core_api.transaction.InvalidTransactionRequestException;
 import core_api.category.DuplicateCategoryException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -80,6 +83,21 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> invalidParameter(HttpServletRequest request) {
         return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request parameter or path value", request);
     }
+    @ExceptionHandler(TransactionNotFoundException.class)
+    ResponseEntity<ApiError> transactionNotFound(HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, "TRANSACTION_NOT_FOUND", "Transaction not found", request);
+    }
+
+    @ExceptionHandler(InvalidTransactionRequestException.class)
+    ResponseEntity<ApiError> invalidTransaction(InvalidTransactionRequestException exception, HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", exception.getMessage(), request);
+    }
+
+    @ExceptionHandler(CategoryInUseException.class)
+    ResponseEntity<ApiError> categoryInUse(HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "CATEGORY_IN_USE", "Category is referenced by transactions; deletion and type changes are not allowed", request);
+    }
+
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
         // Do not log rejected request values, tokens, or database exception messages.
