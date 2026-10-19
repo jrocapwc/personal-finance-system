@@ -1,0 +1,20 @@
+meta {
+  name: Update Category
+  type: http
+  seq: 10
+}
+put {
+  url: {{baseUrl}}/api/v1/categories/{{categoryId}}
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {
+    "name": "Courses",
+    "type": "EXPENSE",
+    "color": "#ABC"
+  }
+}

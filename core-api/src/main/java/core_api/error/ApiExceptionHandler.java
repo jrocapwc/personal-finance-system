@@ -1,6 +1,9 @@
 package core_api.error;
 
 import core_api.auth.DuplicateEmailException;
+import core_api.category.CategoryNotFoundException;
+import core_api.category.DuplicateCategoryException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +66,20 @@ public class ApiExceptionHandler {
         return error(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "Use application/json", request);
     }
 
+    @ExceptionHandler(CategoryNotFoundException.class)
+    ResponseEntity<ApiError> categoryNotFound(HttpServletRequest request) {
+        return error(HttpStatus.NOT_FOUND, "CATEGORY_NOT_FOUND", "Category not found", request);
+    }
+
+    @ExceptionHandler(DuplicateCategoryException.class)
+    ResponseEntity<ApiError> duplicateCategory(HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "DUPLICATE_CATEGORY", "A category with this name and type already exists", request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ApiError> invalidParameter(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Invalid request parameter or path value", request);
+    }
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
         // Do not log rejected request values, tokens, or database exception messages.

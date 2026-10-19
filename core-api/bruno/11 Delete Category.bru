@@ -1,0 +1,13 @@
+meta {
+  name: Delete Category
+  type: http
+  seq: 11
+}
+delete {
+  url: {{baseUrl}}/api/v1/categories/{{categoryId}}
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

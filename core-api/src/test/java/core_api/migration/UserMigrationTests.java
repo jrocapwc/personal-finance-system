@@ -22,8 +22,9 @@ class UserMigrationTests {
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(connection.isValid(2)).isTrue();
         }
+        var v1 = Flyway.configure().dataSource(url, "sa", "").target("1").cleanDisabled(true).load();
+        assertThat(v1.migrate().migrationsExecuted).isEqualTo(1);
         var flyway = Flyway.configure().dataSource(url, "sa", "").cleanDisabled(true).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
         UUID id = UUID.randomUUID();
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var insert = connection.prepareStatement("INSERT INTO users VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")) {
@@ -33,6 +34,7 @@ class UserMigrationTests {
             insert.setString(4, "x".repeat(60));
             insert.executeUpdate();
         }
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement();

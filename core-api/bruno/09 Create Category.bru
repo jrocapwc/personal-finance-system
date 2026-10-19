@@ -1,0 +1,27 @@
+meta {
+  name: Create Category
+  type: http
+  seq: 9
+}
+post {
+  url: {{baseUrl}}/api/v1/categories
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {
+    "name": "Education",
+    "type": "EXPENSE",
+    "color": "#4F46E5"
+  }
+}
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("categoryId", res.body.id);
+  } else {
+    bru.deleteVar("categoryId");
+  }
+}
