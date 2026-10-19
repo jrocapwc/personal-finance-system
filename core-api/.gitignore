@@ -36,3 +36,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Private Bruno environments and local H2 backups
+/bruno/environments/*.private.bru
+*.mv.db.*
+*.h2.db
