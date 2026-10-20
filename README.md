@@ -1,7 +1,18 @@
 # Personal Finance Management System
 
-Milestone 5 adds monthly expense budgets with live transaction-based utilization to the authenticated
+Milestone 6 adds a monthly financial dashboard, including transaction summaries and live budget utilization, to the authenticated
 `core-api`, using Java 25, Spring Boot 4.1.1, Maven, Spring Security, JWT, JPA, Flyway, and H2.
+
+## Standalone Financial Insights Service (Milestone 7A)
+
+`ai-service` now provides a separate Python 3.14 FastAPI rules engine with public
+`GET /health` and API-key-protected `POST /api/v1/insights/analyze`. It accepts
+validated monthly aggregates and returns deterministic educational observations,
+concerns and suggested actions. It does not connect to core-api or its database.
+
+See [ai-service setup, API contract, rules, Bruno examples and tests](ai-service/README.md).
+The local service uses port 8000 and `INTERNAL_API_KEY`; core-api retains port 8080
+and its separate JWT configuration. Existing core-api setup instructions follow.
 
 ## Windows PowerShell setup and startup
 
@@ -53,6 +64,7 @@ Maven Wrapper and uncached dependencies require network access on first use.
 | `POST /api/v1/auth/register` | Public | 201 and a safe user object |
 | `POST /api/v1/auth/login` | Public | 200 with `accessToken`, `tokenType`, `expiresIn`, and safe `user` |
 | `GET /api/v1/users/me` | Bearer JWT required | 200 and the authenticated user's current data |
+| `GET /api/v1/dashboard?month=10&year=2026` | Bearer JWT required | 200 and monthly financial dashboard |
 | `POST /api/v1/budgets` | Bearer JWT required | 201 and budget with live utilization |
 | `GET /api/v1/budgets?month=10&year=2026` | Bearer JWT required | 200 and monthly budget array |
 | `GET /api/v1/budgets/{id}` | Bearer JWT required | 200 and owned budget |
@@ -726,6 +738,161 @@ Suggested commit message:
 ```text
 feat: add monthly expense budgets with live transaction utilization
 ```
+## Financial dashboard (Milestone 6)
+
+```http
+GET /api/v1/dashboard?month=10&year=2026
+Authorization: Bearer <accessToken>
+```
+
+Both `month` (1..12) and `year` (2000..2100) are required. Successful requests
+return 200. Missing, malformed, or out-of-range periods and unsupported query
+parameters return the existing 400 `INVALID_REQUEST` error envelope. Missing,
+invalid, or expired bearer tokens return 401. The owner comes exclusively from
+the verified JWT; a `userId` query parameter is rejected.
+
+The response has this structure (an empty February is shown in full):
+
+```json
+{
+  "month": 2,
+  "year": 2026,
+  "summary": {
+    "totalIncome": 0.00,
+    "totalExpenses": 0.00,
+    "netSavings": 0.00,
+    "savingsRate": null
+  },
+  "expensesByCategory": [],
+  "incomeByCategory": [],
+  "dailySpendingTrend": [
+    {"date":"2026-02-01","amount":0.00}, {"date":"2026-02-02","amount":0.00},
+    {"date":"2026-02-03","amount":0.00}, {"date":"2026-02-04","amount":0.00},
+    {"date":"2026-02-05","amount":0.00}, {"date":"2026-02-06","amount":0.00},
+    {"date":"2026-02-07","amount":0.00}, {"date":"2026-02-08","amount":0.00},
+    {"date":"2026-02-09","amount":0.00}, {"date":"2026-02-10","amount":0.00},
+    {"date":"2026-02-11","amount":0.00}, {"date":"2026-02-12","amount":0.00},
+    {"date":"2026-02-13","amount":0.00}, {"date":"2026-02-14","amount":0.00},
+    {"date":"2026-02-15","amount":0.00}, {"date":"2026-02-16","amount":0.00},
+    {"date":"2026-02-17","amount":0.00}, {"date":"2026-02-18","amount":0.00},
+    {"date":"2026-02-19","amount":0.00}, {"date":"2026-02-20","amount":0.00},
+    {"date":"2026-02-21","amount":0.00}, {"date":"2026-02-22","amount":0.00},
+    {"date":"2026-02-23","amount":0.00}, {"date":"2026-02-24","amount":0.00},
+    {"date":"2026-02-25","amount":0.00}, {"date":"2026-02-26","amount":0.00},
+    {"date":"2026-02-27","amount":0.00}, {"date":"2026-02-28","amount":0.00}
+  ],
+  "recentTransactions": [],
+  "budgetUtilization": [],
+  "topSpendingCategories": []
+}
+```
+
+For a month with income 1000.00 and expenses 200.00, `summary` is:
+
+```json
+{"totalIncome":1000.00,"totalExpenses":200.00,"netSavings":800.00,"savingsRate":80.00}
+```
+
+Category breakdown entries contain `categoryId`, `categoryName`, nullable `color`,
+and `amount`, for example:
+
+```json
+{"categoryId":12,"categoryName":"Food","color":"#FF8800","amount":200.00}
+```
+
+`recentTransactions` reuses the existing safe transaction response: `id`,
+`categoryId`, `type`, `amount`, `description`, `transactionDate`, `source`,
+`createdAt`, `updatedAt`. `budgetUtilization` reuses the existing budget response
+including definition, timestamps, `spentAmount`, `remainingAmount`,
+`percentageUsed`, and `budgetStatus`. Neither exposes owners or JPA entities.
+Configured budgets still appear with zero spending when the month has no expenses.
+
+### Calculations and ordering
+
+All queries use the authenticated owner and transaction dates in
+`[first day of month, first day of next month)`, including December/January rollover.
+Only INCOME transactions contribute to income; only EXPENSE transactions contribute
+to expenses, daily spending, budget usage, and top spending categories.
+
+- `netSavings = totalIncome - totalExpenses`, including negative savings.
+- `savingsRate = netSavings * 100 / totalIncome`, or `null` when income is zero.
+- Money uses `BigDecimal` with two decimal places. Savings rate uses two decimal
+  places with `HALF_UP` rounding; display rounding does not change stored amounts.
+- Category breakdowns sort by amount descending, then category ID ascending.
+  `topSpendingCategories` is the first five expense entries under that ordering.
+- Daily spending includes every day, sorted ascending, filling absent days with
+  0.00. Clients can use `date` as Chart.js labels and `amount` as values; no frontend
+  or Chart.js dependency is added.
+- Recent transactions are limited in SQL to five and sort by transaction date
+  descending, then creation timestamp descending, then ID descending.
+- Budget utilization delegates to `BudgetService.list`, preserving its exact
+  threshold comparisons, rounding, and deterministic ordering. Transaction edits
+  and deletions affect subsequent dashboard requests immediately.
+
+The endpoint is read-only: it does not initialize default categories, write
+aggregates, create tables, or introduce migrations. V1 through V4 remain unchanged.
+
+### Bruno verification
+
+1. Start with the existing PowerShell/JWT setup above, then open `core-api/bruno`
+   in Bruno and select your private local environment.
+2. Register/login and list categories. For predictable totals, use a new test user
+   and select one owned INCOME category and one owned EXPENSE category.
+3. With the existing transaction requests, create income 1000.00 on 2026-10-01 and
+   expense 200.00 on 2026-10-15. Set the matching category IDs and types. Create a
+   budget for that expense category for October 2026, limit 500.00, threshold 80.
+4. Run **25 Financial Dashboard**. Expect 200, income 1000.00, expenses 200.00,
+   savings 800.00, savings rate 80.00, expense daily point 200.00 on October 15,
+   and budget utilization 40.00%, remaining 300.00, SAFE. Other existing data will
+   change these totals. Recent transactions are restricted to the selected month.
+5. Update the expense to 450.00, reload: expenses become 450.00 and budget usage
+   90.00%, WARNING. Delete that expense and reload: expenses become zero and budget
+   usage zero, SAFE. These checks use the existing transaction endpoints.
+6. Run **26 Empty Month Dashboard** after selecting a month with no transactions
+   or budgets. Expect zero totals, null savings rate, empty category/recent/budget
+   arrays, and one zero daily entry per calendar day.
+7. Run **27 Invalid Dashboard Period**: expect 400. Remove the bearer token or use
+   an invalid token on request 25: expect 401. Login as another user and verify
+   their dashboard contains only their own transactions, categories, and budgets.
+
+### Tests, query cost, and limitations
+
+From `core-api` with JDK 25 selected, run `.\mvnw.cmd clean verify`. Dashboard HTTP tests cover summaries, category grouping, zero
+income, empty/leap months, daily series, latest/top-five limits, January/December
+bounds, budget updates after transaction changes, cross-user isolation, invalid
+parameters, and JWT failures. Unit tests verify exact decimal calculations,
+rounding, category tie breakers, bounded recent queries, and owner/date propagation.
+The complete build also runs all existing milestone tests.
+
+The repository performs three dashboard reads (category sums, daily sums, latest
+five rows). Existing budget logic adds one definition query and, when budgets
+exist, one grouped expense query: at most five domain queries, plus JWT identity
+validation. Category metadata is projected in the aggregate query; recent DTOs use
+category IDs without fetching category objects, avoiding N+1 lookups. Existing
+user/date and user/category transaction indexes are reused.
+
+Aggregations scan matching monthly rows; returned category groups and budgets
+scale with the user's category/budget count, while recent rows are capped at five
+and daily points at 31. Category breakdowns and budget lists are not paginated.
+There is no cache or stored total. Multiple reads use the existing database
+isolation level; concurrent writes can produce slightly different snapshots
+between sections of one response. This is a personal-finance dashboard, not a
+locked accounting report. No currency conversion or multi-currency totals exist.
+
+| Class or method | Responsibility |
+| --- | --- |
+| `dashboard/DashboardController.get` | Authenticated route, accepted query parameters, owner extraction and OpenAPI description |
+| `dashboard/DashboardService.get` | Validated month bounds, grouped results, daily zero filling, recent/top-five limits, budget reuse |
+| `dashboard/FinancialSummary.from` | BigDecimal savings and rate, null rate at zero income |
+| `dashboard/DashboardResponse`, `CategoryBreakdown`, `DailyTrend` | Safe response records with chart-friendly dates and amounts |
+| `TransactionRepository.summarizeCategories`, `sumDailyExpenses`, `findRecentForDashboard` | Scoped aggregate projections and bounded recent query |
+
+Suggested commit message:
+
+```text
+feat: add authenticated monthly financial dashboard
+```
+
 ## H2 and migration behavior
 
 Flyway was introduced in Milestone 2. The Boot-managed `spring-boot-starter-flyway`
