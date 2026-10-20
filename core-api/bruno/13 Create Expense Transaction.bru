@@ -3,23 +3,32 @@ meta {
   type: http
   seq: 13
 }
+
 post {
   url: {{baseUrl}}/api/v1/transactions
   body: json
   auth: bearer
 }
+
 auth:bearer {
   token: {{accessToken}}
 }
+
 body:json {
   {
-    "categoryId": {{expenseCategoryId}},
+    "categoryId": {{expenseCategoryId1}},
     "type": "EXPENSE",
-    "amount": 125.50,
-    "description": "Groceries",
+    "amount": 1251.50,
+    "description": "Car loan",
     "transactionDate": "2026-10-19"
   }
 }
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+  expenseCategoryId1: 1
+}
+
 script:post-response {
   if (res.status === 201) {
     bru.setVar("transactionId", res.body.id);

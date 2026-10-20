@@ -1,6 +1,7 @@
 package core_api.error;
 
 import core_api.auth.DuplicateEmailException;
+import core_api.dashboard.InvalidDashboardRequestException;
 import core_api.budget.BudgetNotFoundException;
 import core_api.budget.DuplicateBudgetException;
 import core_api.budget.InvalidBudgetRequestException;
@@ -120,6 +121,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     ResponseEntity<ApiError> missingParameter(HttpServletRequest request) {
         return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Required query parameter is missing", request);
+    }
+
+    @ExceptionHandler(InvalidDashboardRequestException.class)
+    ResponseEntity<ApiError> invalidDashboard(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Dashboard accepts only month and year query parameters", request);
     }
 
     @ExceptionHandler(Exception.class)

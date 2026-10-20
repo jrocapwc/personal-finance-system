@@ -1,0 +1,13 @@
+meta {
+  name: Invalid Dashboard Period
+  type: http
+  seq: 27
+}
+get {
+  url: {{baseUrl}}/api/v1/dashboard?month=13&year=2026
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
