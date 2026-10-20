@@ -1,0 +1,30 @@
+meta {
+  name: Missing Key
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/insights/analyze
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  "month": 10,
+  "year": 2026,
+  "totalIncome": "0.00",
+  "totalExpenses": "0.00",
+  "netSavings": "0.00",
+  "savingsRate": null,
+  "expensesByCategory": [],
+  "budgetUtilization": []
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:8000
+}

@@ -1,0 +1,52 @@
+meta {
+  name: Analyze
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/insights/analyze
+  body: json
+  auth: none
+}
+
+headers {
+  INTERNAL-API-Key: {{internalApiKey}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "month": 10,
+    "year": 2026,
+    "totalIncome": "1000.00",
+    "totalExpenses": "850.00",
+    "netSavings": "150.00",
+    "savingsRate": "15.00",
+    "expensesByCategory": [
+      {
+        "categoryId": 1,
+        "categoryName": "Food",
+        "amount": "400.00"
+      },
+      {
+        "categoryId": 2,
+        "categoryName": "Housing",
+        "amount": "450.00"
+      }
+    ],
+    "budgetUtilization": [
+      {
+        "categoryId": 1,
+        "monthlyLimit": "500.00",
+        "spentAmount": "400.00",
+        "alertThreshold": 80
+      }
+    ]
+  }
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:8000
+  internalApiKey: 8YZ1ef-KIkI5qlRxB234WSuDOfLXgD3OoHKbQpBLS_Y
+}

@@ -1,0 +1,15 @@
+{
+  "month": 10,
+  "year": 2026,
+  "totalIncome": "1000.00",
+  "totalExpenses": "850.00",
+  "netSavings": "150.00",
+  "savingsRate": "15.00",
+  "expensesByCategory": [
+    {"categoryId": 1, "categoryName": "Food", "amount": "400.00"},
+    {"categoryId": 2, "categoryName": "Housing", "amount": "450.00"}
+  ],
+  "budgetUtilization": [
+    {"categoryId": 1, "monthlyLimit": "500.00", "spentAmount": "400.00", "alertThreshold": 80}
+  ]
+}

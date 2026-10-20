@@ -1,0 +1,19 @@
+{
+  "summary": "For 2026-10, income was 1000.00, expenses were 850.00, and net savings were 150.00. The highest spending category was Housing at 450.00.",
+  "positiveObservations": [
+    "You retained 150.00 after expenses."
+  ],
+  "concerns": [
+    "Your savings rate of 15.00% is below the 20.00% rule threshold.",
+    "Budget for category 1 is WARNING at 80.00% (threshold 80%)."
+  ],
+  "recommendations": [
+    "Consider gradually increasing savings toward 20% of income if your circumstances allow.",
+    "Review Housing for discretionary costs that could be reduced."
+  ],
+  "suggestedActions": [
+    "Explore a 10% reduction in Housing, approximately 45.00, if feasible.",
+    "Track category 1 against the remaining budget of 100.00."
+  ],
+  "disclaimer": "These insights are educational and are not professional financial, investment, tax, or legal advice. Consider your circumstances and consult a qualified professional when needed."
+}
