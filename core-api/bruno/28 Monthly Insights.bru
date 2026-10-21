@@ -1,0 +1,19 @@
+meta {
+  name: Monthly Insights
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{baseUrl}}/api/v1/insights?month=10&year=2026
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}

@@ -1,6 +1,8 @@
 package core_api.error;
 
 import core_api.auth.DuplicateEmailException;
+import core_api.insights.UpstreamInsightsException;
+import core_api.insights.InvalidInsightsRequestException;
 import core_api.dashboard.InvalidDashboardRequestException;
 import core_api.budget.BudgetNotFoundException;
 import core_api.budget.DuplicateBudgetException;
@@ -128,6 +130,16 @@ public class ApiExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Dashboard accepts only month and year query parameters", request);
     }
 
+    @ExceptionHandler(InvalidInsightsRequestException.class)
+    ResponseEntity<ApiError> invalidInsights(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Insights accepts only month and year query parameters", request);
+    }
+
+    @ExceptionHandler(UpstreamInsightsException.class)
+    ResponseEntity<ApiError> upstreamInsights(UpstreamInsightsException exception, HttpServletRequest request) {
+        return error(exception.isTimeout() ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
+                exception.isTimeout() ? "INSIGHTS_TIMEOUT" : "INSIGHTS_UNAVAILABLE", exception.getMessage(), request);
+    }
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
         // Do not log rejected request values, tokens, or database exception messages.

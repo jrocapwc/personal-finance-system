@@ -1,6 +1,6 @@
 # Personal Finance Management System
 
-Milestone 6 adds a monthly financial dashboard, including transaction summaries and live budget utilization, to the authenticated
+Milestone 7B connects authenticated monthly financial insights to the standalone FastAPI rules service from the
 `core-api`, using Java 25, Spring Boot 4.1.1, Maven, Spring Security, JWT, JPA, Flyway, and H2.
 
 ## Standalone Financial Insights Service (Milestone 7A)
@@ -64,6 +64,7 @@ Maven Wrapper and uncached dependencies require network access on first use.
 | `POST /api/v1/auth/register` | Public | 201 and a safe user object |
 | `POST /api/v1/auth/login` | Public | 200 with `accessToken`, `tokenType`, `expiresIn`, and safe `user` |
 | `GET /api/v1/users/me` | Bearer JWT required | 200 and the authenticated user's current data |
+| `GET /api/v1/insights?month=10&year=2026` | Bearer JWT required | 200 and educational financial insights |
 | `GET /api/v1/dashboard?month=10&year=2026` | Bearer JWT required | 200 and monthly financial dashboard |
 | `POST /api/v1/budgets` | Bearer JWT required | 201 and budget with live utilization |
 | `GET /api/v1/budgets?month=10&year=2026` | Bearer JWT required | 200 and monthly budget array |
@@ -893,6 +894,194 @@ Suggested commit message:
 feat: add authenticated monthly financial dashboard
 ```
 
+## Spring Boot to FastAPI insights (Milestone 7B)
+
+```http
+GET /api/v1/insights?month=10&year=2026
+Authorization: Bearer <accessToken>
+```
+
+Spring verifies the JWT, resolves its user ID, calls the existing `DashboardService`
+for that owner's selected month, maps the result to FastAPI's minimal contract,
+and returns its six-field insights response. There is no new database table,
+financial calculation, model provider, chatbot, or fallback-generated response.
+The database transaction finishes before the outbound HTTP call.
+
+### Exact contract mapping
+
+| Dashboard source | FastAPI request field |
+| --- | --- |
+| `month`, `year` | `month`, `year` as JSON integers |
+| `summary.totalIncome` | `totalIncome` as a decimal string |
+| `summary.totalExpenses` | `totalExpenses` as a decimal string |
+| `summary.netSavings` | `netSavings` as a decimal string |
+| `summary.savingsRate` | `savingsRate` as a decimal string, or explicit `null` when income is zero |
+| `expensesByCategory` | Only `categoryId`, `categoryName`, `amount` (decimal string) |
+| `budgetUtilization` | Only `categoryId`, `monthlyLimit`, `spentAmount` (decimal strings), `alertThreshold` (integer) |
+
+The real FastAPI budget schema does not accept a category name, budget ID,
+percentage, status, remaining amount, timestamps, or period on each entry; those
+are omitted. Expense colors, income breakdowns, daily points, recent transactions,
+raw descriptions, user identity, email, password hashes and bearer tokens are also
+omitted. Java calculations retain `BigDecimal`; only the dedicated outbound DTO's
+JSON representation uses strings. The dashboard's public response is unchanged.
+
+A successful response has exactly `summary`, `positiveObservations`, `concerns`,
+`recommendations`, `suggestedActions`, and `disclaimer`, matching FastAPI's existing
+response model. See [the sample response](ai-service/examples/analyze-response.json).
+Clients use only the JWT on this Spring endpoint; they never receive or send the
+internal key. FastAPI receives only `X-Internal-API-Key`, never the user's JWT.
+
+### Configuration and local startup
+
+| Variable | Service | Behavior |
+| --- | --- | --- |
+| `INTERNAL_API_KEY` | FastAPI | Existing required key, at least 32 UTF-8 bytes; generate from at least 32 random bytes |
+| `AI_INTERNAL_API_KEY` | Spring | Must match FastAPI's key exactly; no production default |
+| `AI_SERVICE_BASE_URL` | Spring | Defaults to `http://127.0.0.1:8000`; HTTP(S) origin only, without credentials/path/query/fragment |
+| `AI_SERVICE_CONNECT_TIMEOUT` | Spring | Optional, defaults to `2s` |
+| `AI_SERVICE_READ_TIMEOUT` | Spring | Optional, defaults to `5s`; applies to socket reads, including the response body |
+| `JWT_SECRET_BASE64` | Spring | Existing separate JWT signing key, unchanged |
+
+Timeout values must be between 1ms and 60s. Missing/short internal keys cause
+insights requests to return 502 without an outbound call; other Core API features
+can still start. Invalid URL/timeout configuration fails startup. Neither service
+automatically loads `.env`. Configuration strings are not public API fields and
+settings string representations redact credentials. No redirects are followed,
+preventing the internal header from being sent to a redirect destination. There
+are no retries, caches, or HTTP payload logging interceptors.
+
+Use two PowerShell windows. In **window A**, from the repository root:
+
+```powershell
+Set-Location ai-service
+.\.venv\Scripts\Activate.ps1
+# First setup only: python -m venv .venv; python -m pip install -r requirements.txt
+if (!$env:INTERNAL_API_KEY) {
+    $env:INTERNAL_API_KEY = python -c "import secrets; print(secrets.token_urlsafe(32))"
+}
+# Temporarily copy the key for window B without printing it.
+$env:INTERNAL_API_KEY | Set-Clipboard
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log
+```
+
+In **window B**, from the repository root, capture the copied key before replacing
+clipboard contents, then start Spring:
+
+```powershell
+$env:AI_INTERNAL_API_KEY = (Get-Clipboard -Raw).Trim()
+Set-Clipboard -Value ''
+$env:AI_SERVICE_BASE_URL = 'http://127.0.0.1:8000'
+$env:AI_SERVICE_CONNECT_TIMEOUT = '2s'
+$env:AI_SERVICE_READ_TIMEOUT = '5s'
+$env:JAVA_HOME = 'C:\Program Files\Zulu\zulu-25' # Adjust to your JDK 25 installation
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+if (!$env:JWT_SECRET_BASE64) {
+    $jwtBytes = New-Object byte[] 32
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $rng.GetBytes($jwtBytes)
+        $env:JWT_SECRET_BASE64 = [Convert]::ToBase64String($jwtBytes)
+    } finally {
+        $rng.Dispose()
+        [Array]::Clear($jwtBytes, 0, $jwtBytes.Length)
+    }
+}
+Set-Location core-api
+.\mvnw.cmd spring-boot:run '-Dspring-boot.run.profiles=local'
+```
+
+This clipboard transfer is just for local setup; never commit either key. Keep
+both processes running, each in its own window. After stopping/restarting in the
+same shell, reuse its variables. New windows must configure their own variables.
+Changing FastAPI's key also requires updating `AI_INTERNAL_API_KEY` and restarting
+Spring. Changing Spring's JWT key requires logging in again. Do not start a second
+Spring instance against the same file H2 database; stop the earlier one first.
+
+### Bruno end-to-end verification
+
+1. Confirm http://127.0.0.1:8000/health and
+   http://localhost:8080/actuator/health are healthy. FastAPI must report
+   `Application startup complete`, not just that its reload process started.
+2. Open the existing **core-api/bruno** collection and your private environment.
+   Register/login as needed; Login captures `accessToken`. No internal key belongs
+   in these new Spring request files.
+3. For a new user's October 2026, create income 1000.00, Food expense 400.00,
+   Housing expense 450.00, and a Food budget limit 500.00/threshold 80. Use owned
+   category IDs. The existing Dashboard request should show savings 150.00 and
+   savings rate 15.00%. Existing data will change these values.
+4. Run **28 Monthly Insights**: expect 200, Housing as the highest spending
+   category, low savings-rate concern, Food budget WARNING at 80%, and the full
+   educational disclaimer. Compare against the standalone FastAPI sample.
+5. Run **29 Empty Month Insights** for a month with no data: expect 200, zero-activity
+   messaging and no savings-rate division error. Budgets, if configured in that
+   month, may still produce applicable observations.
+6. Run **30 Insights Missing JWT** and **31 Insights Invalid JWT**: expect 401.
+   Run **32 Insights Invalid Period**: expect 400. A `userId` or repeated month/year
+   parameter is rejected with 400.
+7. Login as a second user with different data: expect only that user's financial
+   insights. The response should contain no UUIDs, email, passwords or API keys.
+8. Stop FastAPI using Ctrl+C and repeat request 28: expect 502, not a fabricated
+   success. Restart it with the matching key to restore 200. To check key mismatch,
+   restart Spring with a different locally generated `AI_INTERNAL_API_KEY`: expect
+   502, then restore the original matching key and restart again.
+
+Transport timeouts are covered by mocked automated tests. To reproduce manually,
+a deliberately delayed upstream would be needed; changing rules or adding a sleep
+to the real FastAPI engine is unnecessary.
+
+### Errors, tests, and implementation
+
+| HTTP status | Meaning |
+| --- | --- |
+| 400 | Missing, malformed, out-of-range month/year, unsupported/duplicate query parameters |
+| 401 | Missing, invalid or expired **user JWT**, before dashboard access or an upstream call |
+| 502 `INSIGHTS_UNAVAILABLE` | Missing internal configuration, unreachable FastAPI, upstream authentication/validation/server/redirect failure, malformed or wrong-shaped response |
+| 504 `INSIGHTS_TIMEOUT` | Connection or response socket timeout |
+
+Gateway errors use the existing `ApiError` envelope. Error messages never include
+upstream bodies, keys, financial data, URLs, or nested exception text. An internal
+FastAPI 401/403 becomes 502, preserving the distinction from user authentication.
+Only HTTP 200 with JSON, all six required fields, proper string/list types and no
+unknown fields is accepted. Blank summary/disclaimer and responses above 1 MiB
+are rejected. There is no silent successful fallback.
+
+```powershell
+# From core-api, JDK 25 selected:
+.\mvnw.cmd clean verify
+# Separately, from ai-service, virtual environment activated:
+python -m pytest -q
+```
+
+Spring tests require no live FastAPI process. `MockRestServiceServer` verifies
+exact JSON string mapping, internal header, absence of JWT/cookies, malformed
+responses, upstream failures and timeouts. Full HTTP integration tests mock only
+`FinancialInsightsClient`; the actual JWT filters, dashboard, repositories, budgets,
+H2 and controller run, verifying ownership, zero income and error envelopes. The
+test profile has dummy settings only. Existing Maven and Pytest tests remain part
+of verification.
+
+| Class or method | Responsibility |
+| --- | --- |
+| `InsightsController.get` | JWT-derived owner, accepted period parameters, Swagger contract |
+| `InsightsService.get` | Validate period, obtain owner-scoped dashboard, map and request insights |
+| `AiFinancialRequest.from` | Explicit minimal field mapping; BigDecimal values serialize as decimal strings |
+| `AiServiceProperties`, `AiClientConfiguration` | Environment binding, redaction, dedicated bounded HTTP client without redirects |
+| `FinancialInsightsClient.analyze` | Send internal key, validate status/content/response, distinguish timeout from other upstream failures |
+| `InsightsResponse.decode` | Reject missing, extra, null or wrongly typed response fields |
+| `UpstreamInsightsException`, `ApiExceptionHandler` | Sanitized 502/504 errors using the existing response envelope |
+
+This endpoint inherits the dashboard's current query costs and multiple-query
+READ_COMMITTED snapshot behavior. Concurrent transaction changes can make totals
+and budget sums disagree within a response; if FastAPI rejects that summary,
+Spring returns 502 and the caller can retry after writes finish. No snapshot or
+calculation changes are introduced. The existing FastAPI contract caps each list
+at 1000 and money at 24 digits; a larger aggregate is also an upstream rejection.
+Local loopback HTTP is the documented setup; broader deployment is outside this
+milestone. Read timeout limits each blocking read, not total time for a malicious
+server that continually streams small amounts of data.
+
+Suggested commit: `feat: integrate authenticated financial insights with FastAPI`
 ## H2 and migration behavior
 
 Flyway was introduced in Milestone 2. The Boot-managed `spring-boot-starter-flyway`

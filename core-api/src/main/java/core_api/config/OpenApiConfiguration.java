@@ -13,7 +13,7 @@ public class OpenApiConfiguration {
     OpenAPI coreApiDocumentation() {
         return new OpenAPI()
                 .info(new Info().title("Personal Finance Core API").version("v1")
-                        .description("Register, log in, and manage your categories, transactions, budgets, and monthly financial dashboard. "
+                        .description("Register, log in, and manage your categories, transactions, budgets, monthly financial dashboard, and educational insights. "
                                 + "Log in to obtain a 60-minute access token, then paste it into Authorize."))
                 .components(new Components().addSecuritySchemes("bearerAuth", new SecurityScheme()
                         .type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")
