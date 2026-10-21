@@ -1,6 +1,6 @@
 # Personal Finance Management System
 
-Milestone 7B connects authenticated monthly financial insights to the standalone FastAPI rules service from the
+Milestone 7C adds a stateless financial chatbot with optional OpenAI responses and a deterministic fallback to the
 `core-api`, using Java 25, Spring Boot 4.1.1, Maven, Spring Security, JWT, JPA, Flyway, and H2.
 
 ## Standalone Financial Insights Service (Milestone 7A)
@@ -64,6 +64,7 @@ Maven Wrapper and uncached dependencies require network access on first use.
 | `POST /api/v1/auth/register` | Public | 201 and a safe user object |
 | `POST /api/v1/auth/login` | Public | 200 with `accessToken`, `tokenType`, `expiresIn`, and safe `user` |
 | `GET /api/v1/users/me` | Bearer JWT required | 200 and the authenticated user's current data |
+| `POST /api/v1/chat/messages` | Bearer JWT required | 200 and answer, provider, disclaimer |
 | `GET /api/v1/insights?month=10&year=2026` | Bearer JWT required | 200 and educational financial insights |
 | `GET /api/v1/dashboard?month=10&year=2026` | Bearer JWT required | 200 and monthly financial dashboard |
 | `POST /api/v1/budgets` | Bearer JWT required | 201 and budget with live utilization |
@@ -1082,6 +1083,87 @@ milestone. Read timeout limits each blocking read, not total time for a maliciou
 server that continually streams small amounts of data.
 
 Suggested commit: `feat: integrate authenticated financial insights with FastAPI`
+## Financial chatbot (Milestone 7C)
+
+```http
+POST /api/v1/chat/messages
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+
+{"question":"Explain my income, expenses, savings and budgets.","month":10,"year":2026}
+```
+
+Returns 200 with `answer`, `provider` (`openai` or `rule-based`), and `disclaimer`.
+Spring accepts only the three fields above. User IDs, financial context, history,
+passwords, and privileged fields are rejected. Its JWT owner selects the dashboard;
+no client-supplied financial values are trusted. Question text is trimmed, required,
+and limited to 1000 characters. Month is 1..12 and year 2000..2100.
+
+The internal request to `POST /api/v1/chat/respond` contains question, month, year,
+and `financialSummary`, using the existing minimal decimal-string mapping. It
+reuses `X-Internal-API-Key`, the dedicated HTTP client, timeout settings, response
+size cap and sanitized 502/504 behavior. No bearer JWT is forwarded. Chat request
+and response string representations are redacted to avoid MVC debug body logging.
+The existing insights endpoint retains its contract and deterministic behavior.
+
+FastAPI selects OpenAI only when **both** `OPENAI_API_KEY` and `OPENAI_MODEL` are
+set in its launching environment. Otherwise it uses rules. Provider errors,
+timeouts, refusals without text, incomplete or unusable output select rules too.
+The fallback uses the existing insights engine and supplied values; unsupported
+questions explicitly state insufficient data. It never executes transactions.
+These are independent requests: no conversation ID, previous response, history
+store, database table, or tools are implemented.
+
+See [chat setup, provider settings and limits](ai-service/README.md#financial-chatbot-milestone-7c)
+and [the secret-free environment template](ai-service/.env.example).
+The existing two-window startup instructions above still apply. Leave the OpenAI
+variables unset for free local rule-based testing. Configure optional OpenAI
+variables only in the FastAPI window; keep the provider key out of Spring and Bruno.
+
+### Bruno verification
+
+1. Start both services using the Milestone 7B setup. Login with the existing Core
+   API collection and ensure the dashboard has the expected user's October data.
+2. Run **33 Financial Chat**. With no OpenAI configuration, expect 200 and
+   `provider: "rule-based"`, supplied income/expense/savings values, budget details
+   and the educational disclaimer.
+3. Run **34 Chat Unsupported Question**: expect a clear unsupported response when
+   using rules. It must not claim that a transfer or other financial action ran.
+4. Run **35 Chat Missing JWT**: expect 401. Run **36 Chat Invalid Question**:
+   expect 400. Adding `userId` or `financialSummary` to request 33 also returns 400.
+5. Choose an empty month: expect a safe zero-activity answer, no division error.
+   Login as a different user and repeat: their own dashboard values must be used.
+6. Optionally configure a real OpenAI key and a Responses-compatible model in
+   FastAPI, then restart it and repeat 33. A completed usable provider response
+   returns `provider: "openai"`. An unavailable model/key, rate limit or timeout
+   returns `rule-based`; it must not return raw SDK/provider error messages.
+7. Stop FastAPI and repeat 33: expect 502. A FastAPI transport timeout produces
+   504; Spring cannot perform the Python fallback when FastAPI itself is absent.
+   Default provider deadline is 3s, below Spring's default 5s read timeout. If you
+   raise `OPENAI_TIMEOUT_SECONDS`, raise `AI_SERVICE_READ_TIMEOUT` above it and
+   restart Spring so Python has time to return a fallback.
+
+### Classes and verification
+
+| File | Responsibility |
+| --- | --- |
+| `chat/ChatMessageRequest`, `ChatController` | Validate the user's three fields under existing JWT authentication |
+| `chat/ChatService` | Obtain the verified owner's dashboard and map context; no database transaction spans the HTTP call |
+| `chat/ChatUpstreamRequest`, `ChatResponse` | Minimal context and strict three-field response with allowed provider labels |
+| `insights/FinancialInsightsClient` | Shared request transport for insights and chat, without changing the insights decoder |
+| `ai-service/app/schemas/chat.py` | Validated question, matching period, 32 KiB financial context and bounded response |
+| `ai-service/app/services/chat_provider.py` | Provider interface and sanitized unavailable-provider signal |
+| `ai-service/app/services/openai_chat_provider.py` | Official SDK Responses API, separated system instructions, timeout, output cap, no retries/tools/history |
+| `ai-service/app/services/chatbot_service.py` | Provider orchestration, bounded fallback answers and deterministic insights reuse |
+
+Run `.\mvnw.cmd clean verify` from `core-api` and
+`python -m pytest -q` from the activated `ai-service` environment. Java tests mock
+FastAPI. Python tests mock SDK calls and have an automatic guard that forbids
+unmocked paid Responses API calls. Tests cover contracts, JWT isolation, key
+forwarding, invalid questions, zero activity, provider failure/deadline, disclaimer
+and preservation of existing insights. No real OpenAI request is needed for tests.
+
+Suggested commit: `feat: add stateless financial chatbot with OpenAI and rules fallback`
 ## H2 and migration behavior
 
 Flyway was introduced in Milestone 2. The Boot-managed `spring-boot-starter-flyway`

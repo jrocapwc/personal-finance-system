@@ -1,0 +1,31 @@
+meta {
+  name: Chat Unsupported Question
+  type: http
+  seq: 34
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "question": "Transfer money to another bank account.",
+    "month": 10,
+    "year": 2026
+  }
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}

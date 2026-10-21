@@ -1,9 +1,9 @@
-# Standalone Financial Insights Service (Milestone 7A)
+# Financial Insights and Chat Service
 
 Python 3.14, FastAPI, Pydantic, Uvicorn, Pytest and HTTPX. This service applies
 explainable, deterministic rules to a supplied monthly financial summary. It has
-no database, Spring Boot connection, JWT validation, LLM, external AI API or chatbot.
-It neither stores requests nor calls external services during analysis.
+no database or JWT validation. Spring supplies aggregates; chat optionally uses OpenAI.
+Deterministic insights never call external services. Neither endpoint stores chat history.
 
 ## Windows PowerShell setup
 
@@ -214,7 +214,7 @@ absence of payload values in application logs. Tests do not use or access H2.
 | `app/schemas/financial.py` | Strict, bounded aggregate contract, Decimal parsing and consistency checks, safe response schema |
 | `app/services/insight_engine.py` | Pure rules, documented thresholds, deterministic ordering and educational disclaimer |
 | `tests/` | HTTPX API tests, configuration tests, engine and sample-contract tests |
-| `requirements.txt` | Pinned direct dependencies verified on Python 3.14; no LLM/database libraries |
+| `requirements.txt` | Pinned dependencies verified on Python 3.14; includes the optional OpenAI adapter, no database libraries |
 | `pyproject.toml` | Pytest discovery/import settings |
 | `bruno/`, `examples/` | Manual API examples with no real secrets |
 
@@ -232,3 +232,160 @@ Troubleshooting:
   and launch with that same interpreter.
 
 Suggested commit: `feat: add standalone financial insights rules service`
+
+## Financial chatbot (Milestone 7C)
+
+The existing deterministic insights API is unchanged. A new protected endpoint
+answers one financial question per request, with no persistent chat history:
+
+```http
+POST /api/v1/chat/respond
+X-Internal-API-Key: <same existing internal key>
+Content-Type: application/json
+```
+
+Request fields: `question` (trimmed, 1..1000 characters), `month` (1..12), `year`
+(2000..2100), and `financialSummary` (the exact existing aggregate schema). Both
+periods must match. Financial context is limited to 32 KiB of serialized UTF-8 JSON.
+Unknown fields and invalid types return 422; missing/invalid internal keys return
+401. Spring obtains the financial values from its verified user's dashboard;
+normal clients should call Spring's `/api/v1/chat/messages`, not construct context.
+
+Example internal body:
+
+```json
+{
+  "question": "Explain my income, expenses, savings and budgets.",
+  "month": 10,
+  "year": 2026,
+  "financialSummary": {
+    "month": 10,
+    "year": 2026,
+    "totalIncome": "1000.00",
+    "totalExpenses": "850.00",
+    "netSavings": "150.00",
+    "savingsRate": "15.00",
+    "expensesByCategory": [{"categoryId":1,"categoryName":"Food","amount":"850.00"}],
+    "budgetUtilization": []
+  }
+}
+```
+
+The response contains only `answer` (text, max 8000 characters), `provider`
+(`openai` or `rule-based`), and the same educational financial/investment/tax/legal
+disclaimer used by deterministic insights. There is no model-supplied disclaimer
+that can remove or override the application's disclaimer.
+
+### Optional OpenAI configuration
+
+Install the updated official SDK dependency in the activated virtual environment:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Keep `INTERNAL_API_KEY` configured as before. For rule-based mode, leave
+`OPENAI_API_KEY` and `OPENAI_MODEL` unset. To opt into OpenAI, in the **FastAPI
+launching shell**, safely enter the key and select your available model:
+
+```powershell
+$secureKey = Read-Host 'OpenAI API key' -AsSecureString
+$keyPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureKey)
+try {
+    $env:OPENAI_API_KEY = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($keyPointer)
+} finally {
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($keyPointer)
+    $secureKey.Dispose()
+}
+$env:OPENAI_MODEL = Read-Host 'Responses-compatible model available to your API project'
+$env:OPENAI_TIMEOUT_SECONDS = '3'
+$env:OPENAI_MAX_OUTPUT_TOKENS = '800'
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log
+```
+
+No model name or actual secret is hardcoded. Both key and model are required to
+select OpenAI. Optional timeout range is greater than zero through 30 seconds;
+output limit range is 64..2048 tokens. Defaults are 3 seconds and 800 tokens.
+SDK retries are disabled. An outer async deadline also bounds each provider call.
+Keep Spring's read timeout above the configured provider deadline plus a margin.
+
+Calls use the official SDK's `responses.create`, separate system instructions,
+`max_output_tokens`, `store=False`, and no tools. Requests go to the official API
+origin; alternate endpoints are not configured in this milestone. No conversation
+or previous-response identifier is supplied. SDK debug logging is disabled to
+avoid full-body diagnostics. The provider response must complete and contain
+usable text within the character bound; otherwise the service returns rules.
+See the [official Responses API reference](https://developers.openai.com/api/reference/python/resources/responses/methods/create)
+and [official SDK documentation](https://developers.openai.com/api/reference/python).
+
+OpenAI mode sends the bounded question, month, aggregate amounts, category names,
+and budget values to OpenAI. It omits internal category IDs, user identity,
+credentials, raw transaction descriptions and history. Do not include secrets or
+unnecessary personal information in a question. `store=False` does not establish
+a zero-retention agreement; applicable provider data policies still govern calls.
+Real provider requests may incur charges. Automated tests never make them.
+
+### Grounding and fallback behavior
+
+System instructions require answers based only on supplied values, practical
+budgeting suggestions, explicit insufficient-data responses, and educational
+advice. User questions and category/description text are untrusted and cannot
+supply higher-priority instructions. No tools or financial write methods exist,
+so neither model output nor question text can execute a financial transaction.
+Prompts are a constraint, not a proof that every generated statement is correct;
+model output is checked for completion, shape and size, not audited line by line
+against a ledger. Review generated numeric claims.
+
+`ChatProvider` separates orchestration from SDK details. Missing key/model,
+optional provider setup failure, SDK errors (including unavailable model,
+authentication or rate limit), timeout, empty output or incomplete generation
+select the deterministic fallback. No upstream exceptions or secrets are returned.
+Fallback remains HTTP 200 and explicitly labels `provider: "rule-based"`.
+A failure of FastAPI itself still becomes Spring's existing 502/504 response.
+
+Rules recognize a limited set of English questions about income, expenses,
+savings, spending, budgets and financial overviews, such as:
+
+- `Explain my income, expenses, savings and budgets.`
+- `How can I save money?`
+- `What is my savings rate?`
+- `Show my budget usage.`
+
+The fallback reuses `insight_engine.analyze`, reports actual supplied totals,
+shows up to five expense categories and five budgets, and reuses its concerns
+and practical suggestions. It states when detail is capped. Empty months safely
+report zero activity and unavailable savings rate. Other periods, transaction
+lists, forecasts, transfers, investments, tax/legal questions and unrelated topics
+receive an unsupported/insufficient-data message rather than invented facts.
+This is not general natural-language understanding; ambiguous phrasing may be
+unsupported or receive a general overview. It does not search or access other
+months or accounts. No application database, chat log, cache or audit store is added.
+
+### Manual and automated verification
+
+Use the updated Core API Bruno requests 33..36 described in the root README.
+The separate `ai-service/bruno/06 Chat Respond.bru` request tests this internal
+contract directly with the existing private `internalApiKey` variable. It does
+not need a Spring JWT. Missing keys return 401, invalid/oversized questions or
+period mismatches return 422. Compare current aggregates with Spring's dashboard.
+
+```powershell
+python -m pytest -q
+python -m pip check
+python -m compileall -q app
+```
+
+Tests use mocked providers and mocked official SDK responses, including timeout
+and connection failures, incomplete output, safe fallback, unknown questions,
+empty data, input limits, API-key security and educational disclaimer. An autouse
+fixture prohibits unmocked Responses API calls. Optional real OpenAI verification
+requires your account access and is deliberately manual. Bruno desktop checks
+also remain manual.
+
+For free local testing after any real-provider experiment:
+
+```powershell
+Remove-Item Env:OPENAI_API_KEY -ErrorAction SilentlyContinue
+Remove-Item Env:OPENAI_MODEL -ErrorAction SilentlyContinue
+# Restart Uvicorn with the same internal key; chat now uses rules.
+```

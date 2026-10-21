@@ -122,6 +122,37 @@ class FinancialInsightsClientTests {
         assertThatIllegalArgumentException().isThrownBy(() -> new AiServiceProperties(java.net.URI.create("http://localhost"), "", java.time.Duration.ZERO, java.time.Duration.ofSeconds(5)));
     }
 
+    @Test void chatForwardsOnlyExpectedContextAndInternalKey() {
+        server.expect(requestTo("http://127.0.0.1:8000/api/v1/chat/respond"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("X-Internal-API-Key", InsightsFixtures.KEY))
+                .andExpect(headerDoesNotExist(HttpHeaders.AUTHORIZATION))
+                .andExpect(headerDoesNotExist(HttpHeaders.COOKIE))
+                .andExpect(request -> {
+                    var root = json.readTree(((MockClientHttpRequest) request).getBodyAsString());
+                    assertThat(root.size()).isEqualTo(4);
+                    assertThat(root.get("question").asString()).isEqualTo("Explain my savings");
+                    assertThat(root.get("month").asInt()).isEqualTo(10);
+                    assertThat(root.get("year").asInt()).isEqualTo(2026);
+                    assertThat(root.get("financialSummary")).isEqualTo(json.readTree(InsightsFixtures.REQUEST));
+                })
+                .andRespond(withSuccess("{\"answer\":\"Savings were 150.00.\",\"provider\":\"rule-based\",\"disclaimer\":\"Educational only\"}", MediaType.APPLICATION_JSON));
+        var response = client.chat(new core_api.chat.ChatUpstreamRequest("Explain my savings", 10, 2026,
+                AiFinancialRequest.from(InsightsFixtures.dashboard())));
+        assertThat(response.provider()).isEqualTo("rule-based");
+        assertThat(response.answer()).isEqualTo("Savings were 150.00.");
+        server.verify();
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"{}", "null",
+            "{\"answer\":\"A\",\"provider\":\"unknown\",\"disclaimer\":\"D\"}",
+            "{\"answer\":\"A\",\"provider\":\"openai\",\"disclaimer\":null}"})
+    void invalidChatResponseIsAnUpstreamFailure(String body) {
+        server.expect(anything()).andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        assertThatThrownBy(() -> client.chat(new core_api.chat.ChatUpstreamRequest("Explain my savings", 10, 2026,
+                AiFinancialRequest.from(InsightsFixtures.dashboard())))).isInstanceOf(UpstreamInsightsException.class);
+        server.verify();
+    }
     private void assertFailure(boolean timeout) {
         assertThatThrownBy(() -> client.analyze(AiFinancialRequest.from(InsightsFixtures.dashboard())))
                 .isInstanceOfSatisfying(UpstreamInsightsException.class, exception -> {

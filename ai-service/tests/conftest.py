@@ -43,3 +43,10 @@ def payload_factory():
             "budgetUtilization": budgets if budgets is not None else []
         }
     return build
+
+
+@pytest.fixture(autouse=True)
+def block_live_openai(monkeypatch):
+    from openai.resources.responses import AsyncResponses
+    from unittest.mock import AsyncMock
+    monkeypatch.setattr(AsyncResponses, "create", AsyncMock(side_effect=AssertionError("Live OpenAI calls are forbidden in tests")))

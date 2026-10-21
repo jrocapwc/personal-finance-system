@@ -1,0 +1,22 @@
+meta {
+  name: Chat Invalid Question
+  type: http
+  seq: 36
+}
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: bearer
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  "question": "",
+  "month": 10,
+  "year": 2026
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+

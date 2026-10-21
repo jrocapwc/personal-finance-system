@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from openai import OpenAIError
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -6,17 +7,32 @@ from fastapi.responses import JSONResponse
 
 from app.api.insights import router
 from app.core.config import Settings
+from app.api.chat import router as chat_router
+from app.services.chatbot_service import ChatbotService
+from app.services.openai_chat_provider import OpenAIChatProvider
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         application.state.settings = settings if settings is not None else Settings.from_environment()
-        yield
+        configured = application.state.settings
+        try:
+            provider = OpenAIChatProvider(configured) if configured.openai_api_key and configured.openai_model else None
+        except (OpenAIError, ValueError):
+            # Optional provider setup must not disable health or the existing insights API.
+            provider = None
+        application.state.chatbot = ChatbotService(provider, configured.openai_timeout_seconds)
+        try:
+            yield
+        finally:
+            if provider is not None:
+                await provider.close()
 
     application = FastAPI(title="Financial Insights Service", version="0.1.0", lifespan=lifespan,
                           description="Standalone educational rules engine. Financial values must be decimal strings.")
     application.include_router(router)
+    application.include_router(chat_router)
 
     @application.get("/health", tags=["Health"])
     def health() -> dict[str, str]:

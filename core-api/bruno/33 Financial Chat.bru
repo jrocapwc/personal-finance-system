@@ -1,0 +1,31 @@
+meta {
+  name: Financial Chat
+  type: http
+  seq: 33
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "question": "Explain my income, expenses, savings and budgets.",
+    "month": 11,
+    "year": 2026
+  }
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
+}

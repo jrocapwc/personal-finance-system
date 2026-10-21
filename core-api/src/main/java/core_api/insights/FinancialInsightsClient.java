@@ -1,6 +1,10 @@
 package core_api.insights;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import core_api.chat.ChatUpstreamRequest;
+import core_api.chat.ChatResponse;
+import tools.jackson.databind.JsonNode;
+import java.util.function.Function;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -25,23 +29,31 @@ public class FinancialInsightsClient {
     }
 
     public InsightsResponse analyze(AiFinancialRequest financial) {
+        return post("/api/v1/insights/analyze", financial, root -> InsightsResponse.decode(root, mapper));
+    }
+
+    public ChatResponse chat(ChatUpstreamRequest question) {
+        return post("/api/v1/chat/respond", question, root -> ChatResponse.decode(root, mapper));
+    }
+
+    private <T> T post(String path, Object body, Function<JsonNode, T> decode) {
         var key = properties.internalApiKey();
         if (key == null || key.isBlank() || key.getBytes(StandardCharsets.UTF_8).length < 32 ||
                 key.indexOf('\r') >= 0 || key.indexOf('\n') >= 0) {
             throw UpstreamInsightsException.failure();
         }
         try {
-            return client.post().uri("/api/v1/insights/analyze").contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON).header("X-Internal-API-Key", key).body(financial)
+            return client.post().uri(path).contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON).header("X-Internal-API-Key", key).body(body)
                     .exchange((request, response) -> {
                         var type = response.getHeaders().getContentType();
                         if (response.getStatusCode().value() != 200 || type == null ||
                                 !MediaType.APPLICATION_JSON.isCompatibleWith(type)) {
                             throw UpstreamInsightsException.failure();
                         }
-                        byte[] body = response.getBody().readNBytes(MAX_RESPONSE_BYTES + 1);
-                        if (body.length > MAX_RESPONSE_BYTES) { throw UpstreamInsightsException.failure(); }
-                        return InsightsResponse.decode(mapper.readTree(body), mapper);
+                        byte[] responseBody = response.getBody().readNBytes(MAX_RESPONSE_BYTES + 1);
+                        if (responseBody.length > MAX_RESPONSE_BYTES) { throw UpstreamInsightsException.failure(); }
+                        return decode.apply(mapper.readTree(responseBody));
                     });
         } catch (RestClientException | JacksonException | IllegalArgumentException exception) {
             // Do not propagate upstream bodies, request headers, URLs, or nested exception text.
