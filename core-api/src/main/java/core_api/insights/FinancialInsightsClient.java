@@ -3,6 +3,8 @@ package core_api.insights;
 import org.springframework.beans.factory.annotation.Qualifier;
 import core_api.chat.ChatUpstreamRequest;
 import core_api.chat.ChatResponse;
+import core_api.chat.ChatMode;
+import core_api.chat.ChatUnavailableException;
 import tools.jackson.databind.JsonNode;
 import java.util.function.Function;
 import org.springframework.http.MediaType;
@@ -46,6 +48,10 @@ public class FinancialInsightsClient {
             return client.post().uri(path).contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON).header("X-Internal-API-Key", key).body(body)
                     .exchange((request, response) -> {
+                        if (body instanceof ChatUpstreamRequest chat && chat.mode() == ChatMode.GENERAL &&
+                                response.getStatusCode().value() == 503) {
+                            throw new ChatUnavailableException();
+                        }
                         var type = response.getHeaders().getContentType();
                         if (response.getStatusCode().value() != 200 || type == null ||
                                 !MediaType.APPLICATION_JSON.isCompatibleWith(type)) {

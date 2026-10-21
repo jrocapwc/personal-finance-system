@@ -1,0 +1,30 @@
+meta {
+  name: General Chat
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/respond
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  X-Internal-API-Key: {{internalApiKey}}
+}
+
+body:json {
+  {
+    "mode": "GENERAL",
+    "question": "Explain Python decorators with an example."
+  }
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+

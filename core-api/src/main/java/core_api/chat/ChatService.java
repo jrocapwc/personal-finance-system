@@ -14,6 +14,9 @@ public class ChatService {
         this.dashboard = dashboard; this.client = client;
     }
     public ChatResponse respond(UUID userId, ChatMessageRequest question) {
+        if (question.mode() == ChatMode.GENERAL) {
+            return client.chat(new ChatUpstreamRequest(question.question(), null, null, null, ChatMode.GENERAL));
+        }
         var financial = AiFinancialRequest.from(dashboard.get(userId, question.month(), question.year()));
         return client.chat(new ChatUpstreamRequest(question.question(), question.month(), question.year(), financial));
     }

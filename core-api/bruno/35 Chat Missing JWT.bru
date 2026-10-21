@@ -1,16 +1,19 @@
 meta {
   name: Chat Missing JWT
   type: http
-  seq: 35
+  seq: 34
 }
+
 post {
   url: {{baseUrl}}/api/v1/chat/messages
   body: json
   auth: none
 }
+
 headers {
   Content-Type: application/json
 }
+
 body:json {
   "question": "Explain my savings.",
   "month": 10,

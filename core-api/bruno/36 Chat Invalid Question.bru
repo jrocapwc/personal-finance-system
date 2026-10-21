@@ -1,22 +1,25 @@
 meta {
   name: Chat Invalid Question
   type: http
-  seq: 36
+  seq: 35
 }
+
 post {
   url: {{baseUrl}}/api/v1/chat/messages
   body: json
   auth: bearer
 }
+
 headers {
   Content-Type: application/json
 }
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
 body:json {
   "question": "",
   "month": 10,
   "year": 2026
 }
-auth:bearer {
-  token: {{accessToken}}
-}
-

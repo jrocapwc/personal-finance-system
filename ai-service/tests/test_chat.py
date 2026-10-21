@@ -14,9 +14,88 @@ from app.services.chatbot_service import ChatbotService, UNSUPPORTED
 from app.services.chat_provider import ProviderUnavailable
 from app.services.insight_engine import DISCLAIMER
 from app.services.openai_chat_provider import OpenAIChatProvider, SYSTEM_INSTRUCTIONS
+from app.services.openai_chat_provider import GENERAL_INSTRUCTIONS
+from app.services.chatbot_service import GENERAL_DISCLAIMER, GENERAL_UNAVAILABLE
 
 pytestmark = pytest.mark.anyio
 PATH = "/api/v1/chat/respond"
+
+
+@pytest.mark.parametrize("question,answer", [
+    ("Explain Python decorators with an example.", "A decorator wraps a callable to extend its behavior."),
+    ("Why is the sky blue?", "Air molecules scatter shorter wavelengths of sunlight more strongly."),
+    ("Write a short poem about the moon.", "Silver moon above the sea, light the quiet waves for me."),
+])
+async def test_general_topics_use_responses_api_without_financial_context(api_key, payload_factory, question, answer):
+    from app.main import create_app
+    from httpx import ASGITransport, AsyncClient
+    sdk = Mock()
+    sdk.responses.create = AsyncMock(return_value=SimpleNamespace(status="completed", output_text=answer))
+    sdk.close = AsyncMock()
+    application = create_app(Settings(api_key, "test-only-provider-key", "test-model"))
+    with patch("app.services.openai_chat_provider.AsyncOpenAI", return_value=sdk):
+        async with application.router.lifespan_context(application):
+            async with AsyncClient(transport=ASGITransport(app=application), base_url="http://testserver",
+                                   headers={"X-Internal-API-Key": api_key}) as api:
+                response = await api.post(PATH, json={"question": question, "mode": "GENERAL"})
+                assert response.status_code == 200
+                assert response.json() == {"answer": answer, "provider": "openai", "disclaimer": GENERAL_DISCLAIMER}
+                args = sdk.responses.create.await_args.kwargs
+                assert args["instructions"] == GENERAL_INSTRUCTIONS
+                assert args["input"] == [{"role": "user", "content": question}]
+                assert args["store"] is False
+                assert args["tools"] == []
+                assert args["max_output_tokens"] == 800
+                sdk.responses.create.assert_awaited_once()
+                assert (await api.post("/api/v1/insights/analyze", json=payload_factory())).status_code == 200
+
+
+async def test_general_supplied_period_is_not_sent_to_openai():
+    from app.services.openai_chat_provider import model_input
+    request = ChatRequest(question="Explain gravity", mode="GENERAL", month=10, year=2026)
+    assert model_input(request) == "Explain gravity"
+
+
+@pytest.mark.parametrize("provider_kind", ["missing", "failure", "timeout", "invalid"])
+async def test_general_provider_unavailable_never_uses_financial_fallback(provider_kind):
+    provider = None
+    if provider_kind != "missing":
+        provider = Mock()
+        if provider_kind == "failure":
+            provider.respond = AsyncMock(side_effect=ProviderUnavailable())
+        elif provider_kind == "timeout":
+            async def slow(_request):
+                await asyncio.sleep(1)
+            provider.respond = slow
+        else:
+            provider.respond = AsyncMock(return_value=" ")
+    with pytest.raises(ProviderUnavailable):
+        await ChatbotService(provider, timeout_seconds=0.01).respond(
+            ChatRequest(question="Explain gravity", mode="GENERAL"))
+
+
+@pytest.mark.parametrize("changes", [
+    {"mode": "UNKNOWN"}, {"question": " "}, {"question": "x" * 1001},
+    {"question": 123}, {"month": 13}, {"year": 1999}, {"userId": "other"},
+])
+async def test_invalid_general_requests(client, changes):
+    body = {"question": "Explain gravity", "mode": "GENERAL", **changes}
+    assert (await client.post(PATH, json=body)).status_code == 422
+
+
+async def test_general_rejects_financial_data_and_requires_internal_key(client, payload_factory):
+    body = {"question": "Explain gravity", "mode": "GENERAL"}
+    assert (await client.post(PATH, json={**body, "financialSummary": payload_factory()})).status_code == 422
+    assert (await client.post(PATH, json=body, headers={"X-Internal-API-Key": "invalid"})).status_code == 401
+    client.headers.clear()
+    assert (await client.post(PATH, json=body)).status_code == 401
+
+
+async def test_explicit_finance_mode_requires_context_and_preserves_disclaimer(client, payload_factory):
+    assert (await client.post(PATH, json={"question": "Explain my savings", "mode": "FINANCE"})).status_code == 422
+    response = await client.post(PATH, json={**request_payload(payload_factory), "mode": "FINANCE"})
+    assert response.status_code == 200
+    assert response.json()["disclaimer"] == DISCLAIMER
 
 
 def request_payload(payload_factory, question="Explain my income, expenses, savings and budgets.", **kwargs):

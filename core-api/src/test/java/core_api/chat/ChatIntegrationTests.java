@@ -178,6 +178,48 @@ class ChatIntegrationTests extends JwtTestSupport {
         verifyNoInteractions(upstream);
     }
 
+    @Test void generalModeRequiresJwtButNoPeriod() throws Exception {
+        when(upstream.chat(any())).thenReturn(new ChatResponse("Moonlight over the sea.", "openai", "Verify important information."));
+        var body = "{\"question\":\"Explain Python decorators\",\"mode\":\"GENERAL\"}";
+        assertThat(post(body, null).statusCode()).isEqualTo(401);
+        assertThat(post(body, "invalid-token").statusCode()).isEqualTo(401);
+        verifyNoInteractions(upstream);
+        var response = post(body, tokens.issue(account().getId()));
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(response.body(), "$.provider")).isEqualTo("openai");
+        verify(upstream).chat(new ChatUpstreamRequest("Explain Python decorators", null, null, null, ChatMode.GENERAL));
+    }
+
+    @ParameterizedTest @ValueSource(strings = {
+            "{\"question\":\"Explain Python\",\"mode\":\"UNKNOWN\"}",
+            "{\"question\":\"Explain Python\",\"mode\":\"GENERAL\",\"financialSummary\":{}}",
+            "{\"question\":\"Explain Python\",\"mode\":\"GENERAL\",\"userId\":\"other\"}",
+            "{\"question\":\"Explain savings\",\"mode\":\"FINANCE\"}",
+            "{\"question\":\"Explain Python\",\"mode\":\"GENERAL\",\"month\":13}",
+            "{\"question\":\" \",\"mode\":\"GENERAL\"}"
+    })
+    void invalidModeAndGeneralRequestsAreRejected(String body) throws Exception {
+        assertThat(post(body, tokens.issue(account().getId())).statusCode()).isEqualTo(400);
+        verifyNoInteractions(upstream);
+    }
+
+    @Test void explicitFinanceModePreservesOwnerContext() throws Exception {
+        assertThat(post("{\"question\":\"Explain my savings\",\"mode\":\"FINANCE\",\"month\":10,\"year\":2026}",
+                tokens.issue(account().getId())).statusCode()).isEqualTo(200);
+        var captured = org.mockito.ArgumentCaptor.forClass(ChatUpstreamRequest.class);
+        verify(upstream).chat(captured.capture());
+        assertThat(captured.getValue().mode()).isEqualTo(ChatMode.FINANCE);
+        assertThat(captured.getValue().financialSummary()).isNotNull();
+    }
+
+    @Test void generalProviderUnavailableReturns503WithSanitizedErrorEnvelope() throws Exception {
+        when(upstream.chat(any())).thenThrow(new ChatUnavailableException());
+        var response = post("{\"mode\":\"GENERAL\",\"question\":\"Write a poem about the moon.\"}", tokens.issue(account().getId()));
+        assertThat(response.statusCode()).isEqualTo(503);
+        assertThat(JsonPath.<String>read(response.body(), "$.code")).isEqualTo("CHAT_UNAVAILABLE");
+        assertThat(response.body()).doesNotContain("rule-based", "test-only-internal-key", "Write a poem", "stackTrace");
+    }
+
     private HttpResponse<String> get(String query, String token) throws Exception {
         var fields = new java.util.HashMap<String, Object>();
         fields.put("question", "Explain my income, expenses, savings and budgets.");

@@ -1094,23 +1094,43 @@ Content-Type: application/json
 ```
 
 Returns 200 with `answer`, `provider` (`openai` or `rule-based`), and `disclaimer`.
-Spring accepts only the three fields above. User IDs, financial context, history,
+Spring accepts `question`, optional `mode`, `month`, and `year`. User IDs, financial context, history,
 passwords, and privileged fields are rejected. Its JWT owner selects the dashboard;
 no client-supplied financial values are trusted. Question text is trimmed, required,
 and limited to 1000 characters. Month is 1..12 and year 2000..2100.
 
+`mode` accepts `GENERAL` or `FINANCE`; omission defaults to `FINANCE` for existing
+clients. FINANCE requires month and year and preserves the educational financial
+disclaimer. GENERAL requires only the question and accepts programming, education,
+science, technology, writing, and everyday topics:
+
+```json
+{"question":"Explain Python decorators with an example.","mode":"GENERAL"}
+```
+
+GENERAL still requires the JWT, skips dashboard retrieval, and sends only question
+and mode to FastAPI. Optional valid month/year values are ignored in this mode.
+No financial summary is retrieved or sent to OpenAI. General instructions acknowledge
+that there are no tools or real-time information sources. Its disclaimer is
+`AI-generated responses may contain errors. Verify important information.`
+
 The internal request to `POST /api/v1/chat/respond` contains question, month, year,
-and `financialSummary`, using the existing minimal decimal-string mapping. It
+`mode`, and `financialSummary` in FINANCE mode, using the existing minimal decimal-string mapping. It
 reuses `X-Internal-API-Key`, the dedicated HTTP client, timeout settings, response
 size cap and sanitized 502/504 behavior. No bearer JWT is forwarded. Chat request
 and response string representations are redacted to avoid MVC debug body logging.
 The existing insights endpoint retains its contract and deterministic behavior.
 
 FastAPI selects OpenAI only when **both** `OPENAI_API_KEY` and `OPENAI_MODEL` are
-set in its launching environment. Otherwise it uses rules. Provider errors,
+set in its launching environment or `ai-service/.env`. Explicit process variables
+override the local file, including empty values. FINANCE otherwise uses rules. Provider errors,
 timeouts, refusals without text, incomplete or unusable output select rules too.
-The fallback uses the existing insights engine and supplied values; unsupported
+The FINANCE fallback uses the existing insights engine and supplied values; unsupported
 questions explicitly state insufficient data. It never executes transactions.
+GENERAL requires configured OpenAI credentials for generated answers. On missing
+configuration or provider failure it returns HTTP 503 with code `CHAT_UNAVAILABLE`
+and message `General chat is temporarily unavailable. Please try again later.` It never
+falls back to financial context or a finance-only rejection.
 These are independent requests: no conversation ID, previous response, history
 store, database table, or tools are implemented.
 
@@ -1119,6 +1139,11 @@ and [the secret-free environment template](ai-service/.env.example).
 The existing two-window startup instructions above still apply. Leave the OpenAI
 variables unset for free local rule-based testing. Configure optional OpenAI
 variables only in the FastAPI window; keep the provider key out of Spring and Bruno.
+Alternatively, configure the ignored `ai-service/.env`; it is loaded independently
+of the working directory. Use an API ID such as `gpt-4.1-mini`, rather than a
+display name such as `GPT 4.1 Mini`. Restart FastAPI after configuration changes.
+Safe startup diagnostics report key/model presence; provider failures log only a
+fixed reason, exception class, upstream status, and allowlisted error code.
 
 ### Bruno verification
 
@@ -1142,13 +1167,32 @@ variables only in the FastAPI window; keep the provider key out of Spring and Br
    Default provider deadline is 3s, below Spring's default 5s read timeout. If you
    raise `OPENAI_TIMEOUT_SECONDS`, raise `AI_SERVICE_READ_TIMEOUT` above it and
    restart Spring so Python has time to return a fallback.
+8. With `OPENAI_API_KEY` and `OPENAI_MODEL` set in the FastAPI launching shell, run
+   **37 General Programming**, **38 General Knowledge**, and **39 General Writing**.
+   Expect 200, `provider: "openai"`, relevant answers, and the general disclaimer;
+   none of these bodies needs a month/year. Keep keys server-side, outside Bruno.
+9. Run **40 General Missing JWT** (401), **41 Chat Invalid Mode** (400), and
+   **42 Finance Missing Period** (400). Add `financialSummary` or `userId` to a
+   GENERAL request: expect 400. Run **43 Explicit Finance Chat** to verify the
+   existing summary behavior and educational disclaimer, then **28 Monthly Insights**
+   to confirm deterministic insights still work. Request 33 also checks the default mode.
+10. Restart FastAPI with `OPENAI_API_KEY` explicitly empty in its launching
+    environment and repeat a GENERAL request: expect 503 `CHAT_UNAVAILABLE`
+    with no financial values or provider details. SDK
+    failures are mocked in automated tests. General privacy is checked by service
+    tests (no dashboard call), HTTP serialization tests (only mode/question), and
+    SDK tests (only question in model input); answer text alone cannot prove privacy.
+
+Each request is limited to 1000 question characters, one provider call with no SDK
+retries, the configured output token cap, and an async timeout. These are per-request
+usage limits; this development enhancement does not add a distributed rate limiter.
 
 ### Classes and verification
 
 | File | Responsibility |
 | --- | --- |
-| `chat/ChatMessageRequest`, `ChatController` | Validate the user's three fields under existing JWT authentication |
-| `chat/ChatService` | Obtain the verified owner's dashboard and map context; no database transaction spans the HTTP call |
+| `chat/ChatMode`, `ChatMessageRequest`, `ChatController` | Validate question, mode and conditional period under existing JWT authentication |
+| `chat/ChatService` | Route GENERAL without dashboard access; obtain the verified owner's dashboard for FINANCE |
 | `chat/ChatUpstreamRequest`, `ChatResponse` | Minimal context and strict three-field response with allowed provider labels |
 | `insights/FinancialInsightsClient` | Shared request transport for insights and chat, without changing the insights decoder |
 | `ai-service/app/schemas/chat.py` | Validated question, matching period, 32 KiB financial context and bounded response |

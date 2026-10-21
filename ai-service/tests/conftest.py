@@ -1,4 +1,5 @@
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
 import secrets
 
 import pytest
@@ -43,6 +44,14 @@ def payload_factory():
             "budgetUtilization": budgets if budgets is not None else []
         }
     return build
+
+
+@pytest.fixture(autouse=True)
+def isolate_local_configuration(monkeypatch):
+    # Never read developer credentials from .env during tests.
+    monkeypatch.setattr("app.core.config.LOCAL_ENV_FILE", Path(__file__).with_name(".absent-test.env"))
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_MODEL", raising=False)
 
 
 @pytest.fixture(autouse=True)

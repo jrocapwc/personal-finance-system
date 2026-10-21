@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 from openai import OpenAIError
 
 from fastapi import FastAPI, Request
@@ -10,6 +11,7 @@ from app.core.config import Settings
 from app.api.chat import router as chat_router
 from app.services.chatbot_service import ChatbotService
 from app.services.openai_chat_provider import OpenAIChatProvider
+from app.services.chat_provider import log_provider_failure
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -17,9 +19,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(application: FastAPI):
         application.state.settings = settings if settings is not None else Settings.from_environment()
         configured = application.state.settings
+        logging.getLogger(__name__).info(
+            "OpenAI chat configuration key_present=%s model_present=%s timeout_seconds=%s max_output_tokens=%s",
+            bool(configured.openai_api_key), bool(configured.openai_model),
+            configured.openai_timeout_seconds, configured.openai_max_output_tokens,
+        )
         try:
             provider = OpenAIChatProvider(configured) if configured.openai_api_key and configured.openai_model else None
-        except (OpenAIError, ValueError):
+            if provider is None:
+                log_provider_failure("missing_configuration")
+        except (OpenAIError, ValueError) as exception:
+            log_provider_failure("provider_setup", exception, getattr(exception, "status_code", None))
             # Optional provider setup must not disable health or the existing insights API.
             provider = None
         application.state.chatbot = ChatbotService(provider, configured.openai_timeout_seconds)

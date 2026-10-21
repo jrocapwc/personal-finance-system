@@ -236,7 +236,7 @@ Suggested commit: `feat: add standalone financial insights rules service`
 ## Financial chatbot (Milestone 7C)
 
 The existing deterministic insights API is unchanged. A new protected endpoint
-answers one financial question per request, with no persistent chat history:
+answers one general or financial question per request, with no persistent chat history:
 
 ```http
 POST /api/v1/chat/respond
@@ -250,6 +250,20 @@ periods must match. Financial context is limited to 32 KiB of serialized UTF-8 J
 Unknown fields and invalid types return 422; missing/invalid internal keys return
 401. Spring obtains the financial values from its verified user's dashboard;
 normal clients should call Spring's `/api/v1/chat/messages`, not construct context.
+
+Optional `mode` is `GENERAL` or `FINANCE` (default). FINANCE requires the matching
+period and financial summary described above. GENERAL requires only `question`
+and `mode`; it rejects non-null `financialSummary`. A supplied valid period is
+ignored and never sent to the model. Spring skips financial data retrieval and
+omits financial fields entirely for GENERAL:
+
+```json
+{"question":"Why is the sky blue?","mode":"GENERAL"}
+```
+
+GENERAL supports ordinary programming, education, science, technology, creative
+writing, and everyday conversations subject to normal OpenAI safety requirements.
+Separate instructions explicitly state that no tools or real-time sources exist.
 
 Example internal body:
 
@@ -274,7 +288,8 @@ Example internal body:
 The response contains only `answer` (text, max 8000 characters), `provider`
 (`openai` or `rule-based`), and the same educational financial/investment/tax/legal
 disclaimer used by deterministic insights. There is no model-supplied disclaimer
-that can remove or override the application's disclaimer.
+that can remove or override the application's disclaimer. GENERAL instead uses
+`AI-generated responses may contain errors. Verify important information.`
 
 ### Optional OpenAI configuration
 
@@ -285,7 +300,8 @@ python -m pip install -r requirements.txt
 ```
 
 Keep `INTERNAL_API_KEY` configured as before. For rule-based mode, leave
-`OPENAI_API_KEY` and `OPENAI_MODEL` unset. To opt into OpenAI, in the **FastAPI
+`OPENAI_API_KEY` and `OPENAI_MODEL` absent from both the process and local `.env`,
+or explicitly set the process key to empty. To opt into OpenAI, in the **FastAPI
 launching shell**, safely enter the key and select your available model:
 
 ```powershell
@@ -309,6 +325,15 @@ output limit range is 64..2048 tokens. Defaults are 3 seconds and 800 tokens.
 SDK retries are disabled. An outer async deadline also bounds each provider call.
 Keep Spring's read timeout above the configured provider deadline plus a margin.
 
+Settings also read the ignored `ai-service/.env`, using a path relative to the
+service rather than the shell's working directory. Explicit process environment
+variables override file values; file loading does not mutate the process environment.
+Use an API model ID such as `gpt-4.1-mini`, not a display name such as `GPT 4.1 Mini`.
+Restart FastAPI after changes. Startup logs show only key/model presence and bounds.
+Failure logs include a fixed reason, exception class, numeric upstream status when
+available, and an allowlisted error code (for example `insufficient_quota`). They
+omit exception messages, prompts, financial summaries, credentials and response bodies.
+
 Calls use the official SDK's `responses.create`, separate system instructions,
 `max_output_tokens`, `store=False`, and no tools. Requests go to the official API
 origin; alternate endpoints are not configured in this milestone. No conversation
@@ -318,12 +343,14 @@ usable text within the character bound; otherwise the service returns rules.
 See the [official Responses API reference](https://developers.openai.com/api/reference/python/resources/responses/methods/create)
 and [official SDK documentation](https://developers.openai.com/api/reference/python).
 
-OpenAI mode sends the bounded question, month, aggregate amounts, category names,
+FINANCE mode sends the bounded question, month, aggregate amounts, category names,
 and budget values to OpenAI. It omits internal category IDs, user identity,
 credentials, raw transaction descriptions and history. Do not include secrets or
 unnecessary personal information in a question. `store=False` does not establish
 a zero-retention agreement; applicable provider data policies still govern calls.
 Real provider requests may incur charges. Automated tests never make them.
+GENERAL sends only the bounded question as model input, with separate general
+instructions and the same timeout, token cap, disabled retries and `store=False`.
 
 ### Grounding and fallback behavior
 
@@ -339,8 +366,13 @@ against a ledger. Review generated numeric claims.
 `ChatProvider` separates orchestration from SDK details. Missing key/model,
 optional provider setup failure, SDK errors (including unavailable model,
 authentication or rate limit), timeout, empty output or incomplete generation
-select the deterministic fallback. No upstream exceptions or secrets are returned.
-Fallback remains HTTP 200 and explicitly labels `provider: "rule-based"`.
+select the deterministic fallback in FINANCE. GENERAL returns
+`General chat is temporarily unavailable. Please try again later.` with
+HTTP 503 and code `CHAT_UNAVAILABLE`; it never invokes the finance fallback.
+Spring preserves this as HTTP 503 in its existing error envelope. No `answer` or
+successful `provider` field is returned for an unavailable GENERAL request.
+No upstream exceptions or secrets are returned.
+FINANCE fallback remains HTTP 200 and explicitly labels `provider: "rule-based"`.
 A failure of FastAPI itself still becomes Spring's existing 502/504 response.
 
 Rules recognize a limited set of English questions about income, expenses,
@@ -363,7 +395,8 @@ months or accounts. No application database, chat log, cache or audit store is a
 
 ### Manual and automated verification
 
-Use the updated Core API Bruno requests 33..36 described in the root README.
+Use the updated Core API Bruno requests 33..43 described in the root README.
+`ai-service/bruno/07 General Chat.bru` tests GENERAL directly using the internal key.
 The separate `ai-service/bruno/06 Chat Respond.bru` request tests this internal
 contract directly with the existing private `internalApiKey` variable. It does
 not need a Spring JWT. Missing keys return 401, invalid/oversized questions or

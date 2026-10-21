@@ -1,0 +1,32 @@
+meta {
+  name: Chat Invalid Mode
+  type: http
+  seq: 39
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "mode": "UNKNOWN",
+    "question": "Explain gravity."
+  }
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

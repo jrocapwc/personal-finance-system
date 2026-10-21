@@ -1,6 +1,10 @@
 """Environment configuration; secrets have no defaults and are redacted from repr."""
 import os
+from pathlib import Path
 from dataclasses import dataclass, field
+from dotenv import dotenv_values
+
+LOCAL_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 @dataclass(frozen=True)
@@ -13,7 +17,7 @@ class Settings:
 
     def __post_init__(self) -> None:
         if len(self.internal_api_key.encode("utf-8")) < 32:
-            raise ValueError("INTERNAL_API_KEY must contain at least 42 bytes")
+            raise ValueError("INTERNAL_API_KEY must contain at least 32 bytes")
         if not 0 < self.openai_timeout_seconds <= 30:
             raise ValueError("OPENAI_TIMEOUT_SECONDS must be greater than zero and at most 30")
         if not 64 <= self.openai_max_output_tokens <= 2048:
@@ -21,8 +25,11 @@ class Settings:
 
     @classmethod
     def from_environment(cls) -> "Settings":
-        return cls(internal_api_key=os.environ.get("INTERNAL_API_KEY", ""),
-                   openai_api_key=os.environ.get("OPENAI_API_KEY", "").strip(),
-                   openai_model=os.environ.get("OPENAI_MODEL", "").strip(),
-                   openai_timeout_seconds=float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "3")),
-                   openai_max_output_tokens=int(os.environ.get("OPENAI_MAX_OUTPUT_TOKENS", "800")))
+        # Resolve against the service directory, independent of Uvicorn's working directory.
+        # Explicit process settings (including empty values) take precedence; never mutate os.environ.
+        environment = {**dotenv_values(LOCAL_ENV_FILE, interpolate=False), **os.environ}
+        return cls(internal_api_key=environment.get("INTERNAL_API_KEY") or "",
+                   openai_api_key=(environment.get("OPENAI_API_KEY") or "").strip(),
+                   openai_model=(environment.get("OPENAI_MODEL") or "").strip(),
+                   openai_timeout_seconds=float(environment.get("OPENAI_TIMEOUT_SECONDS") or "3"),
+                   openai_max_output_tokens=int(environment.get("OPENAI_MAX_OUTPUT_TOKENS") or "800"))

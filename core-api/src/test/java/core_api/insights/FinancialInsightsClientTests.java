@@ -130,7 +130,8 @@ class FinancialInsightsClientTests {
                 .andExpect(headerDoesNotExist(HttpHeaders.COOKIE))
                 .andExpect(request -> {
                     var root = json.readTree(((MockClientHttpRequest) request).getBodyAsString());
-                    assertThat(root.size()).isEqualTo(4);
+                    assertThat(root.size()).isEqualTo(5);
+                    assertThat(root.get("mode").asString()).isEqualTo("FINANCE");
                     assertThat(root.get("question").asString()).isEqualTo("Explain my savings");
                     assertThat(root.get("month").asInt()).isEqualTo(10);
                     assertThat(root.get("year").asInt()).isEqualTo(2026);
@@ -153,6 +154,34 @@ class FinancialInsightsClientTests {
                 AiFinancialRequest.from(InsightsFixtures.dashboard())))).isInstanceOf(UpstreamInsightsException.class);
         server.verify();
     }
+    @Test void generalChatSerializesOnlyModeAndQuestion() {
+        server.expect(requestTo("http://127.0.0.1:8000/api/v1/chat/respond"))
+                .andExpect(header("X-Internal-API-Key", InsightsFixtures.KEY))
+                .andExpect(headerDoesNotExist(HttpHeaders.AUTHORIZATION))
+                .andExpect(request -> assertThat(json.readTree(((MockClientHttpRequest) request).getBodyAsString()))
+                        .isEqualTo(json.readTree("{\"question\":\"Explain Python decorators\",\"mode\":\"GENERAL\"}")))
+                .andRespond(withSuccess("{\"answer\":\"A decorator wraps a callable.\",\"provider\":\"openai\",\"disclaimer\":\"Verify important information.\"}", MediaType.APPLICATION_JSON));
+        var response = client.chat(new core_api.chat.ChatUpstreamRequest("Explain Python decorators", null, null, null, core_api.chat.ChatMode.GENERAL));
+        assertThat(response.provider()).isEqualTo("openai");
+        server.verify();
+    }
+
+    @Test void generalChatPropagatesUnavailableWithoutReadingUpstreamBody() {
+        server.expect(requestTo("http://127.0.0.1:8000/api/v1/chat/respond"))
+                .andRespond(withStatus(HttpStatusCode.valueOf(503)).body("private-upstream-body"));
+        assertThatThrownBy(() -> client.chat(new core_api.chat.ChatUpstreamRequest("Write a poem", null, null, null, core_api.chat.ChatMode.GENERAL)))
+                .isInstanceOf(core_api.chat.ChatUnavailableException.class)
+                .hasMessage("General chat is temporarily unavailable. Please try again later.");
+        server.verify();
+    }
+
+    @Test void financeChat503RetainsExistingGatewayFailure() {
+        server.expect(anything()).andRespond(withStatus(HttpStatusCode.valueOf(503)));
+        assertThatThrownBy(() -> client.chat(new core_api.chat.ChatUpstreamRequest("Explain my savings", 10, 2026,
+                AiFinancialRequest.from(InsightsFixtures.dashboard())))).isInstanceOf(UpstreamInsightsException.class);
+        server.verify();
+    }
+
     private void assertFailure(boolean timeout) {
         assertThatThrownBy(() -> client.analyze(AiFinancialRequest.from(InsightsFixtures.dashboard())))
                 .isInstanceOfSatisfying(UpstreamInsightsException.class, exception -> {

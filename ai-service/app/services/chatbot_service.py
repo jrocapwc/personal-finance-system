@@ -3,7 +3,7 @@ import re
 from decimal import localcontext
 
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.chat_provider import ChatProvider, ProviderUnavailable
+from app.services.chat_provider import ChatProvider, ProviderUnavailable, log_provider_failure
 from app.services.insight_engine import DISCLAIMER, analyze
 from app.schemas.financial import percentage
 
@@ -20,7 +20,13 @@ def supported(question: str) -> bool:
                 and re.match(r"^(what|how|why|can|could|please|summari[sz]e|explain|show|tell|give|am|do|did|is|are)\b", text))
 
 
+GENERAL_DISCLAIMER = "AI-generated responses may contain errors. Verify important information."
+GENERAL_UNAVAILABLE = "General chat is temporarily unavailable. Please try again later."
+
+
 def rule_based_answer(request: ChatRequest) -> str:
+    if request.mode == "GENERAL":
+        raise ProviderUnavailable()
     if not supported(request.question):
         return UNSUPPORTED
     financial = request.financialSummary
@@ -47,11 +53,17 @@ class ChatbotService:
         self.timeout_seconds = timeout_seconds
 
     async def respond(self, request: ChatRequest) -> ChatResponse:
+        disclaimer = GENERAL_DISCLAIMER if request.mode == "GENERAL" else DISCLAIMER
         if self.provider is not None:
             try:
                 answer = await asyncio.wait_for(self.provider.respond(request), timeout=self.timeout_seconds)
                 if isinstance(answer, str) and 0 < len(answer.strip()) <= 8000:
-                    return ChatResponse(answer=answer.strip(), provider="openai", disclaimer=DISCLAIMER)
-            except (ProviderUnavailable, TimeoutError):
+                    return ChatResponse(answer=answer.strip(), provider="openai", disclaimer=disclaimer)
+                log_provider_failure("invalid_provider_output")
+            except TimeoutError as exception:
+                log_provider_failure("orchestrator_timeout", exception)
+            except ProviderUnavailable:
                 pass
-        return ChatResponse(answer=rule_based_answer(request), provider="rule-based", disclaimer=DISCLAIMER)
+        if request.mode == "GENERAL":
+            raise ProviderUnavailable()
+        return ChatResponse(answer=rule_based_answer(request), provider="rule-based", disclaimer=disclaimer)

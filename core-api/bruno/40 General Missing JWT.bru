@@ -1,0 +1,28 @@
+meta {
+  name: General Missing JWT
+  type: http
+  seq: 38
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "mode": "GENERAL",
+    "question": "Explain gravity."
+  }
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}
