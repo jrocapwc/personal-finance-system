@@ -1,0 +1,117 @@
+<section class="dashboard" aria-label="Financial dashboard">
+  <div class="page-heading">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Welcome back! Here's your financial overview.</p>
+    </div>
+    <span class="demo-pill">Sample data · October 2026</span>
+  </div>
+
+  <section class="summary-grid" aria-label="Financial summary">
+    @for (item of summaries; track item.kind) {
+      <mat-card class="summary-card" [class]="item.kind">
+        <mat-card-content>
+          <div class="summary-heading">
+            <div class="summary-icon"><mat-icon>{{ item.icon }}</mat-icon></div>
+            <span>{{ item.label }}</span>
+          </div>
+          <strong class="summary-number">{{ item.amount | currency:currencyCode:'symbol':'1.2-2' }}</strong>
+          <div class="summary-change" [class.change-down]="!item.isUp">
+            <mat-icon>{{ item.isUp ? 'north_east' : 'south_east' }}</mat-icon>
+            {{ item.movement }}
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </section>
+
+  <section class="analytics-grid" aria-label="Financial charts">
+    <mat-card class="dashboard-panel">
+      <mat-card-content>
+        <div class="panel-heading"><h2>Income vs Expenses</h2><span>Last 6 months</span></div>
+        <div class="bar-chart" role="img" aria-label="Monthly income exceeds expenses in each of the six sample months">
+          <div class="axis-labels">
+            @for (tick of chartTicks; track tick) { <span>{{ tick / 1000 | number:'1.0-0' }}k</span> }
+          </div>
+          <div class="plot">
+            <div class="grid-lines"><i></i><i></i><i></i><i></i></div>
+            <div class="bar-columns">
+              @for (month of months; track month.name) {
+                <div class="month-group">
+                  <div class="bars">
+                    <div class="bar income-bar" [style.height.%]="month.income / chartMax * 100" [title]="month.name + ' income: PHP ' + month.income"></div>
+                    <div class="bar expense-bar" [style.height.%]="month.expenses / chartMax * 100" [title]="month.name + ' expenses: PHP ' + month.expenses"></div>
+                  </div>
+                  <span>{{ month.name }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+        <div class="chart-legend"><span><i class="dot teal"></i>Income</span><span><i class="dot blue"></i>Expenses</span></div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-panel">
+      <mat-card-content>
+        <div class="panel-heading"><h2>Expense Breakdown</h2><span>This month</span></div>
+        <div class="breakdown-content">
+          <div class="donut" role="img" aria-label="Food 35 percent, transportation 20 percent, shopping 15 percent, bills 15 percent, others 15 percent">
+            <div class="donut-hole">
+              <strong>{{ summaries[2].amount | currency:currencyCode:'symbol':'1.2-2' }}</strong>
+              <small>Total Expenses</small>
+            </div>
+          </div>
+          <div class="breakdown-legend">
+            @for (category of expenses; track category.label) {
+              <div class="breakdown-item">
+                <span class="category-name"><i class="dot" [style.background]="category.color"></i>{{ category.label }}</span>
+                <strong>{{ category.percent }}%</strong>
+              </div>
+            }
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <section class="details-grid" aria-label="Transactions and budgets">
+    <mat-card class="dashboard-panel">
+      <mat-card-content>
+        <div class="panel-heading"><h2>Recent Transactions</h2><span>Latest activity</span></div>
+        <div class="table-scroll">
+          <table class="transaction-table">
+            <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="amount">Amount</th></tr></thead>
+            <tbody>
+              @for (transaction of transactions; track $index) {
+                <tr>
+                  <td>{{ transaction.date | date:'MMM d, y':'':'en-US' }}</td>
+                  <td class="description">{{ transaction.description }}</td>
+                  <td><span class="transaction-category"><mat-icon>{{ transaction.icon }}</mat-icon>{{ transaction.category }}</span></td>
+                  <td class="amount" [class.credit]="transaction.amount > 0" [class.debit]="transaction.amount < 0">{{ transaction.amount | currency:currencyCode:'symbol':'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="dashboard-panel">
+      <mat-card-content>
+        <div class="panel-heading"><h2>Budget Progress</h2><span>This month</span></div>
+        <div class="budget-list">
+          @for (budget of budgets; track budget.label) {
+            <div class="budget-row">
+              <span class="budget-name">{{ budget.label }}</span>
+              <div class="budget-track" role="progressbar" [attr.aria-label]="budget.label + ' budget used'" [attr.aria-valuenow]="budget.percent" aria-valuemin="0" aria-valuemax="100">
+                <span class="budget-fill" [class]="budget.tone" [style.width.%]="budget.percent"></span>
+              </div>
+              <span class="budget-percent">{{ budget.percent }}%</span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+</section>

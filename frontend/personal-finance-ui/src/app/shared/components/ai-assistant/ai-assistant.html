@@ -1,0 +1,155 @@
+
+<div class="assistant-widget">
+
+  @if (isOpen()) {
+
+    <section
+      class="chat-panel"
+      role="region"
+      aria-label="AI Finance Assistant">
+
+      <header class="chat-header">
+
+        <div class="assistant-identity">
+
+          <div class="assistant-avatar">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+
+          <div class="assistant-details">
+            <strong>AI Finance Assistant</strong>
+            <small>Personal Finance System</small>
+          </div>
+
+        </div>
+
+        <button
+          type="button"
+          class="header-close"
+          aria-label="Close AI Assistant"
+          (click)="closeAssistant()">
+          <mat-icon>close</mat-icon>
+        </button>
+
+      </header>
+
+      <div class="mode-selector">
+
+        <button
+          type="button"
+          [class.selected]="mode() === 'GENERAL'"
+          [attr.aria-pressed]="mode() === 'GENERAL'"
+          (click)="changeMode('GENERAL')">
+
+          <mat-icon>chat_bubble_outline</mat-icon>
+          General
+
+        </button>
+
+        <button
+          type="button"
+          [class.selected]="mode() === 'FINANCE'"
+          [attr.aria-pressed]="mode() === 'FINANCE'"
+          (click)="changeMode('FINANCE')">
+
+          <mat-icon>account_balance_wallet</mat-icon>
+          Finance
+
+        </button>
+
+      </div>
+
+      <div class="chat-messages">
+
+        <div class="welcome-state">
+
+          <div class="welcome-avatar">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+
+          <h3>
+            {{ mode() === 'FINANCE'
+              ? 'Your AI Finance Assistant'
+              : 'Your AI Assistant' }}
+          </h3>
+
+          <p>
+            @if (mode() === 'FINANCE') {
+              Ask about budgeting, saving money,
+              spending analysis, and financial planning.
+            } @else {
+              Ask me general questions or anything
+              you'd like to discuss.
+            }
+          </p>
+
+          <div class="suggestion-list">
+
+            @if (mode() === 'FINANCE') {
+              <span>How can I save more money?</span>
+              <span>Help me create a budget</span>
+              <span>Analyze my spending habits</span>
+            } @else {
+              <span>Explain something to me</span>
+              <span>Help me learn a new topic</span>
+              <span>Give me some ideas</span>
+            }
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="chat-footer">
+
+        <div class="message-input">
+
+          <input
+            type="text"
+            placeholder="Backend integration coming next..."
+            aria-label="Message AI Assistant"
+            disabled
+          />
+
+          <button
+            type="button"
+            aria-label="Send message"
+            disabled>
+            <mat-icon>send</mat-icon>
+          </button>
+
+        </div>
+
+        <small>
+          AI responses will be enabled after API integration.
+        </small>
+
+      </div>
+
+    </section>
+
+  }
+
+  <button
+    type="button"
+    class="assistant-toggle"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-label]="isOpen()
+      ? 'Close AI Assistant'
+      : 'Open AI Assistant'"
+    (click)="toggleAssistant()">
+
+    <mat-icon>
+      {{ isOpen() ? 'close' : 'smart_toy' }}
+    </mat-icon>
+
+    @if (!isOpen()) {
+      <span class="assistant-indicator">
+        <mat-icon>chevron_left</mat-icon>
+      </span>
+    }
+
+  </button>
+
+</div>

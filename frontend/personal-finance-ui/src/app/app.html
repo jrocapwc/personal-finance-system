@@ -1,0 +1,105 @@
+
+<div class="app-shell" [class.dark-theme]="isDarkMode()">
+
+  <mat-sidenav-container class="app-container">
+
+    <mat-sidenav
+      #drawer
+      class="sidebar"
+      [mode]="isMobile() ? 'over' : 'side'"
+      [opened]="!isMobile()">
+
+      <div class="brand">
+        <div class="brand-logo">
+          <mat-icon>account_balance_wallet</mat-icon>
+        </div>
+        <div>
+          <strong>FinanceAI</strong>
+          <small>Personal Finance System</small>
+        </div>
+      </div>
+
+      <div class="nav-heading">MAIN MENU</div>
+
+      <mat-nav-list class="navigation">
+
+        <a
+          mat-list-item
+          routerLink="/dashboard"
+          routerLinkActive="active-link"
+          (click)="closeOnMobile()">
+          <mat-icon matListItemIcon>dashboard</mat-icon>
+          <span matListItemTitle>Dashboard</span>
+        </a>
+
+        <a mat-list-item disabled>
+          <mat-icon matListItemIcon>receipt_long</mat-icon>
+          <span matListItemTitle>Transactions</span>
+        </a>
+
+        <a mat-list-item disabled>
+          <mat-icon matListItemIcon>account_balance</mat-icon>
+          <span matListItemTitle>Budgets</span>
+        </a>
+
+        <a mat-list-item disabled>
+          <mat-icon matListItemIcon>category</mat-icon>
+          <span matListItemTitle>Categories</span>
+        </a>
+
+      </mat-nav-list>
+
+      <div class="sidebar-footer">
+        <mat-icon>auto_awesome</mat-icon>
+        <span>Manage your finances smarter.</span>
+      </div>
+
+    </mat-sidenav>
+
+    <mat-sidenav-content>
+
+      <mat-toolbar class="topbar">
+
+        <button
+          mat-icon-button
+          aria-label="Toggle sidebar"
+          (click)="drawer.toggle()">
+          <mat-icon>menu</mat-icon>
+        </button>
+
+        <span class="toolbar-title">Dashboard</span>
+
+        <span class="spacer"></span>
+
+        <button
+          mat-icon-button
+          type="button"
+          [attr.aria-label]="isDarkMode()
+            ? 'Switch to light mode'
+            : 'Switch to dark mode'"
+          (click)="toggleTheme()">
+          <mat-icon>
+            {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
+          </mat-icon>
+        </button>
+
+        <div class="profile">
+          <div class="profile-avatar">
+            <mat-icon>person</mat-icon>
+          </div>
+          <span>My Account</span>
+        </div>
+
+      </mat-toolbar>
+
+      <main class="main-content">
+        <router-outlet />
+      </main>
+
+    </mat-sidenav-content>
+
+  </mat-sidenav-container>
+
+  <app-ai-assistant />
+
+</div>
