@@ -60,7 +60,8 @@ class CoreApiApplicationTests extends JwtTestSupport {
         assertThat(paths).containsOnlyKeys("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/users/me",
                 "/api/v1/categories", "/api/v1/categories/{id}",
                 "/api/v1/transactions", "/api/v1/transactions/{id}",
-                "/api/v1/budgets", "/api/v1/budgets/{id}", "/api/v1/dashboard", "/api/v1/insights", "/api/v1/chat/messages");
+                "/api/v1/budgets", "/api/v1/budgets/{id}", "/api/v1/dashboard", "/api/v1/insights", "/api/v1/chat/messages",
+                "/api/v1/chat/conversations", "/api/v1/chat/conversations/{id}", "/api/v1/chat/conversations/{id}/messages");
         assertThat(JsonPath.<String>read(response.body(), "$.components.securitySchemes.bearerAuth.scheme"))
                 .isEqualTo("bearer");
         assertThat(JsonPath.<String>read(response.body(), "$.components.securitySchemes.bearerAuth.bearerFormat"))
