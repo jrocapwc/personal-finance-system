@@ -1,7 +1,19 @@
 # Personal Finance Management System
 
-Milestone 7C adds a stateless financial chatbot with optional OpenAI responses and a deterministic fallback to the
+Milestone 7D adds owned MongoDB conversations while preserving the Milestone 7C stateless chatbot, optional OpenAI responses, and deterministic financial fallback in the
 `core-api`, using Java 25, Spring Boot 4.1.1, Maven, Spring Security, JWT, JPA, Flyway, and H2.
+
+Conversation persistence uses PyMongo in FastAPI with local `mongodb://127.0.0.1:27017`,
+database `personal_finance_ai`. H2 remains responsible for accounts and financial records.
+See [Milestone 7D architecture, PowerShell startup/testing, schema, indexes, errors, and Bruno verification](docs/milestone-7d.md).
+Public conversation endpoints require the existing JWT:
+
+| Method | Path | Result |
+| --- | --- | --- |
+| POST | `/api/v1/chat/conversations` | Create GENERAL or FINANCE conversation; return `id` |
+| GET | `/api/v1/chat/conversations?page=0&size=20` | Owned conversations, newest activity first |
+| GET | `/api/v1/chat/conversations/{id}?page=0&size=100` | Metadata, disclaimer, chronological message page |
+| POST | `/api/v1/chat/conversations/{id}/messages` | Save successful turn; return answer, provider, disclaimer |
 
 ## Standalone Financial Insights Service (Milestone 7A)
 

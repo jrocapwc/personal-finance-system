@@ -12,6 +12,10 @@ from app.api.chat import router as chat_router
 from app.services.chatbot_service import ChatbotService
 from app.services.openai_chat_provider import OpenAIChatProvider
 from app.services.chat_provider import log_provider_failure
+from app.core.mongodb import MongoDatabase
+from app.services.conversation_repository import ConversationRepository
+from app.api.conversations import router as conversations_router
+from starlette.concurrency import run_in_threadpool
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -19,6 +23,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(application: FastAPI):
         application.state.settings = settings if settings is not None else Settings.from_environment()
         configured = application.state.settings
+        mongo = MongoDatabase(configured)
+        application.state.conversations = ConversationRepository(mongo.database)
         logging.getLogger(__name__).info(
             "OpenAI chat configuration key_present=%s model_present=%s timeout_seconds=%s max_output_tokens=%s",
             bool(configured.openai_api_key), bool(configured.openai_model),
@@ -36,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            await run_in_threadpool(mongo.close)
             if provider is not None:
                 await provider.close()
 
@@ -43,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                           description="Standalone educational rules engine. Financial values must be decimal strings.")
     application.include_router(router)
     application.include_router(chat_router)
+    application.include_router(conversations_router)
 
     @application.get("/health", tags=["Health"])
     def health() -> dict[str, str]:

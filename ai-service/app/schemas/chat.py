@@ -3,6 +3,11 @@ from pydantic import Field, StrictInt, model_validator
 from app.schemas.financial import ContractModel, FinancialSummary
 
 
+class HistoryMessage(ContractModel):
+    role: Literal["user", "assistant"]
+    content: Annotated[str, Field(min_length=1, max_length=8000)]
+
+
 class ChatRequest(ContractModel):
     question: Annotated[str, Field(min_length=1, max_length=1000)]
     mode: Literal["GENERAL", "FINANCE"] = "FINANCE"
@@ -23,6 +28,10 @@ class ChatRequest(ContractModel):
         if len(self.financialSummary.model_dump_json().encode("utf-8")) > 32768:
             raise ValueError("Financial context exceeds the 32 KiB chat limit")
         return self
+
+
+class ContextualChatRequest(ChatRequest):
+    history: Annotated[list[HistoryMessage], Field(max_length=12)] = Field(default_factory=list)
 
 
 class ChatResponse(ContractModel):

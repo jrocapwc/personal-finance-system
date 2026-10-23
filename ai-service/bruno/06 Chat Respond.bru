@@ -3,27 +3,42 @@ meta {
   type: http
   seq: 6
 }
+
 post {
   url: {{baseUrl}}/api/v1/chat/respond
   body: json
   auth: none
 }
+
 headers {
   X-Internal-API-Key: {{internalApiKey}}
   Content-Type: application/json
 }
+
 body:json {
-  "question": "Explain my income, expenses, savings and budgets.",
-  "month": 10,
-  "year": 2026,
-  "financialSummary": {
+  {
+    "question": "Explain my income, expenses, savings and budgets.",
     "month": 10,
     "year": 2026,
-    "totalIncome": "1000.00",
-    "totalExpenses": "850.00",
-    "netSavings": "150.00",
-    "savingsRate": "15.00",
-    "expensesByCategory": [{"categoryId":1,"categoryName":"Food","amount":"850.00"}],
-    "budgetUtilization": []
+    "financialSummary": {
+      "month": 10,
+      "year": 2026,
+      "totalIncome": "1000.00",
+      "totalExpenses": "850.00",
+      "netSavings": "150.00",
+      "savingsRate": "15.00",
+      "expensesByCategory": [
+        {
+          "categoryId": 1,
+          "categoryName": "Food",
+          "amount": "850.00"
+        }
+      ],
+      "budgetUtilization": []
+    }
   }
+}
+
+vars:pre-request {
+  baseUrl: http://127.0.0.1:8000
 }

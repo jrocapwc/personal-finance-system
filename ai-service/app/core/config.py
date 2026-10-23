@@ -14,6 +14,8 @@ class Settings:
     openai_model: str = ""
     openai_timeout_seconds: float = 3.0
     openai_max_output_tokens: int = 800
+    mongodb_uri: str = field(default="mongodb://127.0.0.1:27017", repr=False)
+    mongodb_database: str = "personal_finance_ai"
 
     def __post_init__(self) -> None:
         if len(self.internal_api_key.encode("utf-8")) < 32:
@@ -32,4 +34,6 @@ class Settings:
                    openai_api_key=(environment.get("OPENAI_API_KEY") or "").strip(),
                    openai_model=(environment.get("OPENAI_MODEL") or "").strip(),
                    openai_timeout_seconds=float(environment.get("OPENAI_TIMEOUT_SECONDS") or "3"),
-                   openai_max_output_tokens=int(environment.get("OPENAI_MAX_OUTPUT_TOKENS") or "800"))
+                   openai_max_output_tokens=int(environment.get("OPENAI_MAX_OUTPUT_TOKENS") or "800"),
+                   mongodb_uri=environment.get("MONGODB_URI") or "mongodb://127.0.0.1:27017",
+                   mongodb_database=environment.get("MONGODB_DATABASE") or "personal_finance_ai")

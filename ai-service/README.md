@@ -2,8 +2,10 @@
 
 Python 3.14, FastAPI, Pydantic, Uvicorn, Pytest and HTTPX. This service applies
 explainable, deterministic rules to a supplied monthly financial summary. It has
-no database or JWT validation. Spring supplies aggregates; chat optionally uses OpenAI.
-Deterministic insights never call external services. Neither endpoint stores chat history.
+MongoDB conversation storage and no JWT validation. Spring verifies JWTs and supplies trusted ownership
+and aggregates; chat optionally uses OpenAI. Deterministic insights never call external services.
+The existing `/chat/respond` remains stateless; new `/chat/conversations` routes persist successful turns.
+See [Milestone 7D setup, schema, security, and verification](../docs/milestone-7d.md).
 
 ## Windows PowerShell setup
 
@@ -14,7 +16,7 @@ Set-Location ai-service
 python --version                          # Must select Python 3.14
 python -m venv .venv                      # Only needed when creating the environment
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
 
 The Python launcher `py` is optional; these instructions use `python`, which is
@@ -36,13 +38,14 @@ has no default, must contain at least 32 UTF-8 bytes, and should be generated fr
 at least 32 random bytes as above. Startup fails if it is absent or too short.
 Environment variables belong to this shell session; a newly opened shell must
 configure the key again. Reuse a securely stored key when clients need continuity.
-`.env.example` documents the name; `.env` files are **not automatically loaded**.
+Copy `.env.example` to ignored `ai-service/.env` to load local settings automatically.
+Explicit process variables take precedence, including explicitly empty values.
 Do not commit secrets or paste keys into request URLs. Stop with Ctrl+C.
 
 The server binds only to loopback. `--no-access-log` also keeps request URLs out
 of Uvicorn access logs. Application code never logs bodies or API keys. Public
 health and documentation reveal no financial data. Keep this standalone service
-local; broader network deployment and Spring Boot integration are future work.
+local; broader network deployment is outside this milestone.
 
 - Health: http://127.0.0.1:8000/health
 - Interactive OpenAPI: http://127.0.0.1:8000/docs
