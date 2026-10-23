@@ -1,0 +1,22 @@
+meta {
+  name: Repeat Mock Import
+  type: http
+  seq: 49
+}
+
+post {
+  url: {{baseUrl}}/api/v1/transactions/import/mock
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Repeated import skips existing provider records", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.deep.equal({ importedCount: 0, skippedCount: 5, failedCount: 0, totalProcessed: 5 });
+  });
+}

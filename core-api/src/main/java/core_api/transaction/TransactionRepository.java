@@ -14,6 +14,7 @@ import java.util.UUID;
 public interface TransactionRepository extends JpaRepository<Transaction, Long>, JpaSpecificationExecutor<Transaction> {
     Optional<Transaction> findByIdAndUser_Id(Long id, UUID userId);
     boolean existsByCategory_Id(Long categoryId);
+    boolean existsByUser_IdAndSourceAndExternalTransactionId(UUID userId, TransactionSource source, String externalId);
 
     interface DashboardCategoryTotal {
         core_api.category.CategoryType getType();

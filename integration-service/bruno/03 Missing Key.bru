@@ -1,0 +1,18 @@
+meta {
+  name: Missing Key
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/internal/mock-transactions
+  body: none
+  auth: none
+}
+
+tests {
+  test("Internal authentication is required", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getBody().code).to.equal("UNAUTHORIZED");
+  });
+}

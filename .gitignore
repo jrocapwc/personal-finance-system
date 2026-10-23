@@ -4,6 +4,7 @@
 !.env.example
 *.pem
 *.key
+*.private.bru
 
 # Java / Maven / IDEs
 **/target/
@@ -39,6 +40,7 @@ htmlcov/
 
 # Node.js / Angular
 node_modules/
+.tools/
 .angular/
 .npm/
 dist/

@@ -9,6 +9,8 @@ import core_api.user.UserRepository;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import core_api.integration.MockTransaction;
 
 import java.util.UUID;
 
@@ -30,6 +32,32 @@ public class TransactionService {
         var user = lockUser(userId);
         var category = availableCategory(userId, request.categoryId(), request.type());
         return TransactionResponse.from(transactions.saveAndFlush(new Transaction(user, category, request)));
+    }
+
+    /** One committed row per call; same owner lock and category validation as manual writes. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean importMock(UUID userId, MockTransaction row) {
+        var user = lockUser(userId);
+        if (transactions.existsByUser_IdAndSourceAndExternalTransactionId(userId, TransactionSource.MOCK_PROVIDER, row.externalTransactionId())) {
+            return false;
+        }
+        String name = switch (row.categoryHint()) {
+            case "SALARY" -> "Salary";
+            case "FREELANCE" -> "Freelance";
+            case "FOOD" -> "Food";
+            case "TRANSPORTATION" -> "Transportation";
+            case "HOUSING" -> "Housing";
+            default -> throw new InvalidTransactionRequestException("Unknown mock category hint");
+        };
+        var expectedType = row.categoryHint().equals("SALARY") || row.categoryHint().equals("FREELANCE")
+                ? CategoryType.INCOME : CategoryType.EXPENSE;
+        if (row.type() != expectedType) throw new InvalidTransactionRequestException("Mock category hint does not match transaction type");
+        var mapped = categories.findByUser_IdAndTypeAndNormalizedName(userId, row.type(), Category.normalizeName(name))
+                .orElseThrow(CategoryNotFoundException::new);
+        var category = availableCategory(userId, mapped.getId(), row.type());
+        var request = new TransactionRequest(category.getId(), row.type(), row.amount(), row.description(), row.transactionDate());
+        transactions.saveAndFlush(Transaction.imported(user, category, request, row.externalTransactionId()));
+        return true;
     }
 
     public TransactionResponse get(UUID userId, Long id) {

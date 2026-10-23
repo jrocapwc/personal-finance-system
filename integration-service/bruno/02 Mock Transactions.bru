@@ -1,0 +1,27 @@
+meta {
+  name: Mock Transactions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/internal/mock-transactions
+  body: none
+  auth: none
+}
+
+headers {
+  X-Internal-API-Key: {{internalApiKey}}
+}
+
+tests {
+  test("Normalized fictional records", function () {
+    expect(res.getStatus()).to.equal(200);
+    const records = res.getBody().transactions;
+    expect(records.length).to.equal(5);
+    records.forEach(function (record) {
+      expect(record.source).to.equal("MOCK_PROVIDER");
+      expect(typeof record.amount).to.equal("string");
+    });
+  });
+}

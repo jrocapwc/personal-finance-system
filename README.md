@@ -1,7 +1,13 @@
 # Personal Finance Management System
 
-Milestone 7D adds owned MongoDB conversations while preserving the Milestone 7C stateless chatbot, optional OpenAI responses, and deterministic financial fallback in the
-`core-api`, using Java 25, Spring Boot 4.1.1, Maven, Spring Security, JWT, JPA, Flyway, and H2.
+Milestone 8 adds a local Node.js 24 LTS / Express mock transaction provider and
+JWT-protected `POST /api/v1/transactions/import/mock`. Spring imports fictional records
+through its existing transaction business logic, maps owned categories, and skips duplicate
+provider IDs. An additive Flyway V5 migration preserves existing H2 records and migration history.
+
+See [Milestone 8 architecture, PowerShell startup, environment variables, tests, and Bruno verification](integration-service/README.md).
+The provider serves deterministic PHP fixtures; it has no database access or banking connectivity.
+The Core API continues to use Java 25, Spring Boot 4.1.1, Maven, Spring Security, JWT, JPA, Flyway, and H2.
 
 Conversation persistence uses PyMongo in FastAPI with local `mongodb://127.0.0.1:27017`,
 database `personal_finance_ai`. H2 remains responsible for accounts and financial records.

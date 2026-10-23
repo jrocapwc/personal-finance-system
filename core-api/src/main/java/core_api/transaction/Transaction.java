@@ -51,8 +51,11 @@ public class Transaction {
     private LocalDate transactionDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, updatable = false, length = 6)
+    @Column(nullable = false, updatable = false, length = 32)
     private TransactionSource source = TransactionSource.MANUAL;
+
+    @Column(name = "external_transaction_id", updatable = false, length = 100)
+    private String externalTransactionId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -66,6 +69,13 @@ public class Transaction {
     public Transaction(User user, Category category, TransactionRequest request) {
         this.user = user;
         update(category, request);
+    }
+
+    static Transaction imported(User user, Category category, TransactionRequest request, String externalId) {
+        var transaction = new Transaction(user, category, request);
+        transaction.source = TransactionSource.MOCK_PROVIDER;
+        transaction.externalTransactionId = externalId;
+        return transaction;
     }
 
     public void update(Category category, TransactionRequest request) {
@@ -92,6 +102,7 @@ public class Transaction {
     public String getDescription() { return description; }
     public LocalDate getTransactionDate() { return transactionDate; }
     public TransactionSource getSource() { return source; }
+    public String getExternalTransactionId() { return externalTransactionId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

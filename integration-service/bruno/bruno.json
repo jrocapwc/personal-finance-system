@@ -1,0 +1,8 @@
+{
+  "version": "1",
+  "name": "Mock Transaction Integration Service",
+  "type": "collection",
+  "ignore": [
+    "*.private.bru"
+  ]
+}

@@ -10,6 +10,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllByUser_IdOrderByTypeAscNormalizedNameAscIdAsc(UUID userId);
     List<Category> findAllByUser_IdAndTypeOrderByNormalizedNameAscIdAsc(UUID userId, CategoryType type);
     Optional<Category> findByIdAndUser_Id(Long id, UUID userId);
+    Optional<Category> findByUser_IdAndTypeAndNormalizedName(UUID userId, CategoryType type, String normalizedName);
     boolean existsByUser_IdAndTypeAndNormalizedName(UUID userId, CategoryType type, String normalizedName);
     boolean existsByUser_IdAndTypeAndNormalizedNameAndIdNot(UUID userId, CategoryType type, String normalizedName, Long id);
 }

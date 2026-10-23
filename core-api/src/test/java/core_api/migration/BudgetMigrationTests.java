@@ -32,7 +32,7 @@ class BudgetMigrationTests {
             }
         }
         var latest = Flyway.configure().dataSource(url, "sa", "").cleanDisabled(true).load();
-        assertThat(latest.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(latest.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, "sa", ""); var statement = connection.createStatement()) {
             try (var rows = statement.executeQuery("SELECT password_hash FROM users WHERE email='owner@example.com'")) {

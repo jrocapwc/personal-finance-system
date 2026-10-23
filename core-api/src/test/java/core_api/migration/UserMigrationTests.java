@@ -34,7 +34,7 @@ class UserMigrationTests {
             insert.setString(4, "x".repeat(60));
             insert.executeUpdate();
         }
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement();
