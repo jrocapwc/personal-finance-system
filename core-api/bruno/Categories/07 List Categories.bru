@@ -1,0 +1,26 @@
+meta {
+  name: List Categories
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/categories
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:post-response {
+  bru.deleteVar("incomeCategoryId");
+  bru.deleteVar("expenseCategoryId");
+  if (res.getStatus() === 200) {
+    const income = res.getBody().find(c => c.type === "INCOME" && c.name === "Salary") || res.getBody().find(c => c.type === "INCOME");
+    const expense = res.getBody().find(c => c.type === "EXPENSE" && c.name === "Food") || res.getBody().find(c => c.type === "EXPENSE");
+    if (income) bru.setVar("incomeCategoryId", income.id);
+    if (expense) bru.setVar("expenseCategoryId", expense.id);
+  }
+}

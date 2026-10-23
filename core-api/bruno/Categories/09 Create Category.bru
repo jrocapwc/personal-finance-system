@@ -1,0 +1,31 @@
+meta {
+  name: Create Category
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/v1/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Fictional Travel",
+    "type": "EXPENSE",
+    "color": "#4F46E5"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("categoryId", res.getBody().id);
+  } else {
+    bru.deleteVar("categoryId");
+  }
+}

@@ -1,0 +1,13 @@
+meta {
+  name: Empty Month Dashboard
+  type: http
+  seq: 26
+}
+get {
+  url: {{baseUrl}}/api/v1/dashboard?month=2&year={{year}}
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Mock Import Missing JWT
+  type: http
+  seq: 50
+}
+
+post {
+  url: {{baseUrl}}/api/v1/transactions/import/mock
+  body: none
+  auth: none
+}
+
+tests {
+  test("Missing JWT is rejected", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

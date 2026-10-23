@@ -1,0 +1,29 @@
+meta {
+  name: Send Finance Conversation Message
+  type: http
+  seq: 53
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/conversations/{{financeConversationId}}/messages
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"question":"Explain my income, expenses and savings"}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

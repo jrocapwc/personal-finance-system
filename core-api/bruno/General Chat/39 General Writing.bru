@@ -1,0 +1,32 @@
+meta {
+  name: General Writing
+  type: http
+  seq: 37
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "mode": "GENERAL",
+    "question": "Write a short poem about the moon."
+  }
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

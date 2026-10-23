@@ -1,0 +1,21 @@
+meta {
+  name: Cross User Budget
+  type: http
+  seq: 58
+}
+
+get {
+  url: {{baseUrl}}/api/v1/budgets/{{foreignBudgetId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

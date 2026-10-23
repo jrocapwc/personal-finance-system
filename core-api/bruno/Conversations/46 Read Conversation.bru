@@ -1,0 +1,25 @@
+meta {
+  name: Read Conversation
+  type: http
+  seq: 46
+}
+
+get {
+  url: {{baseUrl}}/api/v1/chat/conversations/{{conversationId}}?page=0&size=100
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

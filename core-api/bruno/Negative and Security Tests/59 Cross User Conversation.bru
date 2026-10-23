@@ -1,0 +1,21 @@
+meta {
+  name: Cross User Conversation
+  type: http
+  seq: 59
+}
+
+get {
+  url: {{baseUrl}}/api/v1/chat/conversations/{{foreignConversationId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

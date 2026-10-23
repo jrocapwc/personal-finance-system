@@ -1,0 +1,21 @@
+meta {
+  name: Cross User Transaction
+  type: http
+  seq: 57
+}
+
+get {
+  url: {{baseUrl}}/api/v1/transactions/{{foreignTransactionId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Invalid Login
+  type: http
+  seq: 55
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"email":"{{email}}","password":"{{invalidPassword}}"}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

@@ -217,7 +217,7 @@ absence of payload values in application logs. Tests do not use or access H2.
 | `app/schemas/financial.py` | Strict, bounded aggregate contract, Decimal parsing and consistency checks, safe response schema |
 | `app/services/insight_engine.py` | Pure rules, documented thresholds, deterministic ordering and educational disclaimer |
 | `tests/` | HTTPX API tests, configuration tests, engine and sample-contract tests |
-| `requirements.txt` | Pinned dependencies verified on Python 3.14; includes the optional OpenAI adapter, no database libraries |
+| `requirements.txt` | Pinned dependencies verified on Python 3.14; includes the optional OpenAI adapter and PyMongo conversation persistence |
 | `pyproject.toml` | Pytest discovery/import settings |
 | `bruno/`, `examples/` | Manual API examples with no real secrets |
 

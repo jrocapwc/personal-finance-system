@@ -1,0 +1,21 @@
+meta {
+  name: Read Finance Conversation
+  type: http
+  seq: 54
+}
+
+get {
+  url: {{baseUrl}}/api/v1/chat/conversations/{{financeConversationId}}?page=0&size=100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

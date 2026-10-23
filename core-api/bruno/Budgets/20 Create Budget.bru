@@ -1,0 +1,33 @@
+meta {
+  name: Create Budget
+  type: http
+  seq: 20
+}
+
+post {
+  url: {{baseUrl}}/api/v1/budgets
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "categoryId": {{expenseCategoryId}},
+    "month": {{month}},
+    "year": {{year}},
+    "monthlyLimit": 20000.00,
+    "alertThreshold": 80
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("budgetId", res.getBody().id);
+  } else {
+    bru.deleteVar("budgetId");
+  }
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Create Finance Conversation
+  type: http
+  seq: 52
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/conversations
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"mode":"FINANCE","title":"Fictional monthly review","month":{{month}},"year":{{year}}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) bru.setVar("financeConversationId", res.getBody().id);
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

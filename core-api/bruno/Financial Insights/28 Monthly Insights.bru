@@ -1,0 +1,15 @@
+meta {
+  name: Monthly Insights
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{baseUrl}}/api/v1/insights?month={{month}}&year={{year}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

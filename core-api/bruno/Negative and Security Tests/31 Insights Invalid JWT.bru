@@ -1,0 +1,13 @@
+meta {
+  name: Insights Invalid JWT
+  type: http
+  seq: 31
+}
+get {
+  url: {{baseUrl}}/api/v1/insights?month=10&year=2026
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: invalid-token
+}

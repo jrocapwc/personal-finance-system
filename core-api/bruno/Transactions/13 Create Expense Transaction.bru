@@ -1,0 +1,33 @@
+meta {
+  name: Create Expense Transaction
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/v1/transactions
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "categoryId": {{expenseCategoryId}},
+    "type": "EXPENSE",
+    "amount": 16176.00,
+    "description": "Fictional grocery expense",
+    "transactionDate": "{{transactionDate}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("transactionId", res.getBody().id);
+  } else {
+    bru.deleteVar("transactionId");
+  }
+}

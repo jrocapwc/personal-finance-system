@@ -1,0 +1,36 @@
+meta {
+  name: Register
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "{{name}}",
+    "email": "{{email}}",
+    "password": "{{password}}"
+  }
+}
+
+script:pre-request {
+  const runId = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  bru.setVar("name", bru.getEnvVar("name") || "Fictional QA User");
+  bru.setVar("email", bru.getEnvVar("email") || "qa-" + runId + "@example.test");
+  bru.setVar("password", bru.getEnvVar("password") || "Fictional-QA-only-" + runId + "!");
+  bru.setVar("invalidPassword", "Incorrect-fictional-" + runId);
+  ["accessToken", "categoryId", "incomeCategoryId", "expenseCategoryId", "incomeTransactionId", "transactionId", "budgetId", "conversationId", "financeConversationId"].forEach(key => bru.deleteVar(key));
+}
+
+tests {
+  test("Fictional user registered safely", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody()).not.to.have.property("password");
+    expect(res.getBody()).not.to.have.property("passwordHash");
+  });
+}

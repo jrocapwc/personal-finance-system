@@ -1,0 +1,32 @@
+meta {
+  name: General Knowledge
+  type: http
+  seq: 37
+}
+
+post {
+  url: {{baseUrl}}/api/v1/chat/messages
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "mode": "GENERAL",
+    "question": "What is the financial advice you can give to me? write it on 2-3 sentence"
+  }
+}
+
+tests {
+  test("Expected HTTP status", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Update Budget
+  type: http
+  seq: 23
+}
+put {
+  url: {{baseUrl}}/api/v1/budgets/{{budgetId}}
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{accessToken}}
+}
+body:json {
+  {
+    "categoryId": {{expenseCategoryId}},
+    "month": {{month}},
+    "year": {{year}},
+    "monthlyLimit": 2000.00,
+    "alertThreshold": 75
+  }
+}
