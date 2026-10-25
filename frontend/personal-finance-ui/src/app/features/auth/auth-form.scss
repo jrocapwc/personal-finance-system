@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+h1 {
+  text-align: center;
+  font-size: 26px;
+  margin: 0 0 10px;
+}
+.intro {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+form {
+  display: grid;
+  gap: 20px;
+}
+.field {
+  display: grid;
+  gap: 8px;
+}
+label {
+  font-size: 14px;
+  font-weight: 600;
+}
+input {
+  width: 100%;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--surface-alt);
+  color: var(--text-primary);
+  outline-offset: 3px;
+}
+input::placeholder {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+input:focus-visible {
+  outline: 2px solid var(--accent);
+}
+input[aria-invalid='true'] {
+  border-color: var(--negative);
+}
+.password-field {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+.password-field input {
+  padding-right: 54px;
+}
+.password-field button {
+  position: absolute;
+  right: 5px;
+  color: var(--text-secondary);
+}
+.hint {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.error {
+  color: color-mix(in srgb, var(--negative) 80%, var(--text-primary));
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+.notice {
+  border: 1px solid var(--border-color);
+  background: var(--surface-alt);
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+.success {
+  color: var(--text-primary);
+  border-inline-start: 3px solid var(--positive);
+}
+.submit {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 9px;
+  background: #007f73;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+.submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid #ffffff66;
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+.auth-link {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 26px 0 0;
+}
+a {
+  color: var(--text-primary);
+  text-decoration-color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}

@@ -1,0 +1,45 @@
+:host {
+  display: block;
+}
+.auth-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 80px 20px 40px;
+  background: var(--page-bg);
+}
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 36px;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px #00000008;
+}
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 24px;
+  margin-bottom: 30px;
+}
+.auth-brand mat-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 12px;
+  box-sizing: content-box;
+  border-radius: 14px;
+}
+.theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: var(--text-primary);
+}
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 26px 20px;
+  }
+}

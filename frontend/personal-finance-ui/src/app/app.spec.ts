@@ -1,24 +1,104 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
+import { routes } from './app.routes';
+import { AuthService } from './core/services/auth';
+import { ThemeService } from './core/services/theme';
+import { testCredentials, testLogin } from './core/auth.testing';
 
-describe('App', () => {
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
+describe('Authentication routes and layouts', () => {
+  beforeEach(() => {
+    localStorage.removeItem('finance-theme');
+    TestBed.configureTestingModule({
       imports: [App],
-    })
-      .compileComponents();
+      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
+    });
   });
-
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+  afterEach(() => {
+    TestBed.inject(HttpTestingController).verify();
+    localStorage.removeItem('finance-theme');
   });
-
-  it('should render title', async () => {
+  function login() {
+    TestBed.inject(AuthService).login(testCredentials).subscribe();
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/login').flush(testLogin);
+  }
+  it('creates the root and applies light/dark theme to the entire outlet', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, personal-finance-ui');
+    expect(fixture.nativeElement.querySelector('.dark-theme')).toBeNull();
+    TestBed.inject(ThemeService).toggleTheme();
+    await fixture.whenStable();
+    expect(fixture.nativeElement.querySelector('.dark-theme')).toBeTruthy();
+    expect(localStorage.getItem('finance-theme')).toBe('dark');
   });
+  it('restores the existing theme preference after rendering', async () => {
+    localStorage.setItem('finance-theme', 'dark');
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    expect(TestBed.inject(ThemeService).isDarkMode()).toBe(true);
+  });
+  it.each(['/dashboard', '/', '/unknown'])('redirects unauthenticated %s to login', async (url) => {
+    const harness = await RouterTestingHarness.create(url);
+    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(harness.routeNativeElement?.querySelector('app-login')).toBeTruthy();
+    expect(harness.routeNativeElement?.querySelector('.sidebar')).toBeNull();
+    expect(harness.routeNativeElement?.querySelector('app-ai-assistant')).toBeNull();
+  });
+  it('register is public and has no dashboard layout', async () => {
+    const harness = await RouterTestingHarness.create('/register');
+    expect(harness.routeNativeElement?.querySelector('app-register')).toBeTruthy();
+    expect(harness.routeNativeElement?.querySelector('mat-toolbar')).toBeNull();
+  });
+  it('shows registration success on login', async () => {
+    const harness = await RouterTestingHarness.create('/login?registered=true');
+    expect(harness.routeNativeElement?.querySelector('[role="status"]')?.textContent).toContain(
+      'Account created successfully',
+    );
+  });
+  it('opens dashboard, preserves charts and assistant modes, and logs out', async () => {
+    login();
+    const harness = await RouterTestingHarness.create('/dashboard');
+    const element = harness.routeNativeElement!;
+    expect(element.querySelector('app-dashboard')).toBeTruthy();
+    expect(element.textContent).toContain('Test User');
+    expect(element.textContent).toContain('Income');
+    expect(element.textContent).toContain('Recent Transactions');
+    const toggle = element.querySelector<HTMLButtonElement>(
+      'button[aria-label="Open AI Assistant"]',
+    )!;
+    toggle.click();
+    harness.detectChanges();
+    expect(element.querySelector('[aria-label="AI Finance Assistant"]')).toBeTruthy();
+    const general = Array.from(
+      element.querySelectorAll<HTMLButtonElement>('.mode-selector button'),
+    )[0];
+    general.click();
+    harness.detectChanges();
+    expect(general.getAttribute('aria-pressed')).toBe('true');
+    const themeToggle = element.querySelector<HTMLButtonElement>(
+      '[aria-label="Switch to dark mode"]',
+    )!;
+    themeToggle.click();
+    harness.detectChanges();
+    expect(TestBed.inject(ThemeService).isDarkMode()).toBe(true);
+    const logout = Array.from(element.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Logout'),
+    )!;
+    logout.click();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/login');
+    await harness.navigateByUrl('/dashboard');
+    expect(TestBed.inject(Router).url).toBe('/login');
+  });
+  it.each(['/login', '/register'])(
+    'redirects authenticated users from %s to dashboard',
+    async (url) => {
+      login();
+      await RouterTestingHarness.create(url);
+      expect(TestBed.inject(Router).url).toBe('/dashboard');
+    },
+  );
 });
