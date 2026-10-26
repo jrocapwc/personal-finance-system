@@ -37,12 +37,13 @@ textarea:focus-visible {
 }
 .assistant-toggle {
   transition: background 0.15s ease;
-  border: 2px solid var(--color-primary);
-  width: 60px;
-  height: 60px;
+  border: 3px solid var(--surface);
+  width: 64px;
+  height: 64px;
+  position: relative;
   border-radius: 50%;
-  background: var(--surface);
-  color: var(--color-primary);
+  background: var(--brand-gradient);
+  color: white;
   box-shadow: 0 7px 25px var(--shadow-color);
   display: grid;
   place-items: center;
@@ -56,7 +57,7 @@ textarea:focus-visible {
   background: var(--surface);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border-radius: 14px;
   box-shadow: 0 12px 45px var(--shadow-color);
   font-size: 13px;
 }
@@ -65,7 +66,7 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 14px;
-  background: var(--brand-header);
+  background: var(--brand-gradient);
   color: var(--on-brand-header);
 }
 .assistant-identity {
@@ -79,8 +80,8 @@ textarea:focus-visible {
   place-items: center;
   width: 40px;
   height: 40px;
-  background: var(--accent-soft);
-  border-radius: 12px;
+  background: white;
+  border-radius: 50%;
 }
 .assistant-details {
   display: flex;
@@ -264,7 +265,7 @@ textarea:focus-visible {
   }
 }
 .assistant-toggle:hover {
-  background: var(--accent-soft);
+  box-shadow: 0 8px 28px var(--shadow-color);
 }
 .message-input button:not(:disabled):hover,
 .mode-selector button.selected:not(:disabled):hover {
@@ -278,4 +279,46 @@ textarea:focus-visible {
   .assistant-toggle {
     transition: none;
   }
+}
+
+.robot {
+  display: block;
+  width: 40px;
+  height: 44px;
+  object-fit: contain;
+}
+.assistant-toggle .robot {
+  width: 48px;
+  height: 54px;
+}
+.assistant-toggle > svg {
+  width: 25px;
+  height: 25px;
+}
+.assistant-label {
+  position: absolute;
+  right: 52px;
+  top: 17px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 9px 17px 9px 12px;
+  background: var(--brand-gradient);
+  color: white;
+  border-radius: 30px 0 0 30px;
+  box-shadow: 0 4px 14px var(--shadow-color);
+  z-index: -1;
+}
+.welcome-state > .robot {
+  width: 56px;
+  height: 62px;
+  margin: 0 auto;
+}
+.message.user {
+  background: var(--brand-gradient);
+  color: white;
+  border-radius: 14px 14px 3px 14px;
+}
+.message.assistant {
+  border-radius: 14px 14px 14px 3px;
 }

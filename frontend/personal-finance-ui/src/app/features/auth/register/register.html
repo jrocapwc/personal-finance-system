@@ -60,7 +60,20 @@
         [attr.aria-label]="hidePassword() ? 'Show password' : 'Hide password'"
         [attr.aria-pressed]="!hidePassword()"
       >
-        <mat-icon>{{ hidePassword() ? 'visibility' : 'visibility_off' }}</mat-icon>
+        <mat-icon
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <use
+              [attr.href]="'ui-icons.svg#' + (hidePassword() ? 'visibility' : 'visibility_off')"
+            ></use></svg
+        ></mat-icon>
       </button>
     </div>
     <span id="password-hint" class="hint"

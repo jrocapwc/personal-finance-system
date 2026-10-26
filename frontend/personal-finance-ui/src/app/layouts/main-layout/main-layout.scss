@@ -8,191 +8,191 @@
   background: var(--page-bg);
   color: var(--text-primary);
 }
-
 .sidebar {
-  width: 248px;
+  width: 216px;
   background: var(--surface) !important;
   color: var(--text-primary) !important;
   border-right: 1px solid var(--border-color);
   border-radius: 0 !important;
 }
-
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 26px 20px 34px;
-
-  strong {
-    display: block;
-    font-size: 17px;
-    color: var(--text-primary);
-  }
-
-  small {
-    display: block;
-    margin-top: 3px;
-    font-size: 10px;
-    color: var(--text-secondary);
-  }
+  gap: 8px;
+  padding: 22px 16px 28px;
 }
-
+.brand strong {
+  display: block;
+  color: var(--accent);
+  font-size: 20px;
+  letter-spacing: -0.7px;
+}
+.brand strong span {
+  color: var(--text-primary);
+}
+.brand small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 8px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
 .brand-logo {
-  width: 43px;
-  height: 43px;
-  border-radius: 12px;
-  background: var(--color-primary);
-  color: white;
+  width: 30px;
+  height: 36px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
-
-/* Works with either .nav-heading (new shell) or .navigation-title (earlier shell). */
-.nav-heading,
-.navigation-title {
-  padding: 0 22px 11px;
-  font-size: 10px;
+.brand-logo img {
+  width: 30px;
+  height: 36px;
+}
+.nav-heading {
+  color: var(--text-secondary);
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 1.2px;
-  color: var(--text-secondary);
+  letter-spacing: 1.5px;
+  padding: 0 20px 10px;
 }
-
 .navigation {
-  padding: 0 11px;
-
-  a[mat-list-item] {
-    margin: 3px 0;
-    border-radius: 9px;
-    color: var(--text-primary) !important;
-    --mdc-list-list-item-label-text-color: var(--text-primary);
-    --mdc-list-list-item-leading-icon-color: var(--text-secondary);
-    --mdc-list-list-item-hover-label-text-color: var(--text-primary);
-  }
-
-  a[mat-list-item].active-link {
-    background: var(--accent-soft) !important;
-    --mdc-list-list-item-label-text-color: var(--text-primary);
-    --mdc-list-list-item-leading-icon-color: var(--accent);
-    font-weight: 600;
-  }
-
-  a[mat-list-item][disabled] {
-    opacity: 0.55;
-  }
+  padding: 0 10px;
 }
-
+.navigation :is(a, button)[mat-list-item] {
+  margin: 3px 0;
+  height: 46px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  border-radius: 7px;
+  --mdc-list-list-item-label-text-color: var(--text-primary);
+  --mdc-list-list-item-leading-icon-color: var(--text-secondary);
+  --mdc-list-list-item-hover-label-text-color: var(--text-primary);
+}
+.navigation a.active-link {
+  background: var(--accent-soft) !important;
+  border-left: 3px solid var(--color-primary);
+  --mdc-list-list-item-label-text-color: var(--accent);
+  --mdc-list-list-item-leading-icon-color: var(--accent);
+}
 .sidebar-footer {
-  margin: 34px 20px;
-  padding-top: 20px;
   display: flex;
+  gap: 8px;
   align-items: center;
-  gap: 9px;
+  margin: 30px 18px;
+  padding-top: 18px;
   border-top: 1px solid var(--border-color);
   color: var(--text-secondary);
-  font-size: 12px;
+  font-size: 11px;
 }
-
-/* Also support the original Option B markup if it is still in app.html. */
-.sidebar-bottom {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  padding: 15px 20px 18px;
-  color: var(--text-secondary);
-}
-
-.sidebar-divider {
-  border-top: 1px solid var(--border-color);
-  margin-bottom: 14px;
-}
-.bottom-link {
-  display: flex;
-  gap: 11px;
-  align-items: center;
-  padding: 9px 0;
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-.sidebar-version {
-  margin-top: 18px;
-  font-size: 10px;
-  color: var(--text-secondary);
-}
-
 .topbar {
   height: 68px;
-  padding: 0 24px;
+  padding: 0 22px;
   background: var(--surface) !important;
   color: var(--text-primary) !important;
   border-bottom: 1px solid var(--border-color);
 }
-
 .toolbar-title {
   margin-left: 10px;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary);
 }
-
-.spacer,
-.toolbar-spacer {
+.toolbar-brand {
+  display: none;
+}
+.spacer {
   flex: 1;
 }
-
+.theme-switch {
+  width: 48px;
+  height: 28px;
+  margin: 0 10px;
+  padding: 0;
+  border-radius: 30px;
+  background: var(--brand-gradient);
+  border: 1px solid var(--accent);
+}
+.theme-thumb {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px #0003;
+  transition: transform 0.15s ease;
+}
+.theme-switch.is-dark .theme-thumb {
+  transform: translateX(19px);
+  background: #ffe6ad;
+}
 .profile {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin-left: 13px;
+  margin: 0 8px;
   font-size: 12px;
-  color: var(--text-primary);
 }
-
 .profile-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
   display: grid;
   place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
 }
-
 .main-content {
-  max-width: 1500px;
+  max-width: 1450px;
   min-height: calc(100dvh - 68px);
   margin: 0 auto;
-  padding: 29px;
+  padding: 25px;
+  color: var(--text-primary);
+}
+.app-container .mat-drawer-content {
   background: var(--page-bg);
   color: var(--text-primary);
 }
-
-/* Make Angular Material's sidenav/content inherit the app theme. */
-.app-container .mat-drawer-content,
-.app-container .mat-drawer-inner-container {
-  background: var(--page-bg);
-  color: var(--text-primary);
-}
-
 .app-container .mat-drawer-inner-container {
   background: var(--surface);
+  color: var(--text-primary);
 }
-
 @media (max-width: 768px) {
   .topbar {
-    padding: 0 13px;
+    padding: 0 10px;
   }
   .main-content {
-    padding: 17px;
+    padding: 18px 14px;
   }
   .profile span {
     display: none;
   }
+  .profile {
+    margin: 0 2px;
+  }
   .toolbar-title {
+    display: none;
+  }
+  .toolbar-brand {
+    display: block;
+    color: var(--accent);
     font-size: 15px;
+    font-weight: 700;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-thumb {
+    transition: none;
   }
 }
 
-.toolbar-brand { font-size: 13px; font-weight: 700; color: var(--accent); padding-right: 16px; margin-right: 16px; border-right: 1px solid var(--border-color); }
-@media (max-width: 768px) { .toolbar-brand { display: none; } }
+.navigation [matListItemTitle] {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.navigation .active-link mat-icon {
+  color: var(--accent);
+}

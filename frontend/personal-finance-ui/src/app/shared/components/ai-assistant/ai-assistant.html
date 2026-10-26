@@ -3,7 +3,7 @@
     <section class="chat-panel" role="region" aria-label="Ask Yaman Ai">
       <header class="chat-header">
         <div class="assistant-identity">
-          <div class="assistant-avatar"><mat-icon>smart_toy</mat-icon></div>
+          <div class="assistant-avatar"><img class="robot" src="assistant-robot.svg" alt="" /></div>
           <div class="assistant-details">
             <strong>Ask Yaman Ai</strong><small>YamanTracker</small>
           </div>
@@ -14,15 +14,48 @@
           aria-label="Close Ask Yaman Ai"
           (click)="closeAssistant()"
         >
-          <mat-icon>close</mat-icon>
+          <mat-icon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#close"></use></svg
+          ></mat-icon>
         </button>
       </header>
       <nav class="chat-actions" aria-label="Chat actions">
         <button type="button" [disabled]="sending()" (click)="newChat()">
-          <mat-icon>add</mat-icon>New Chat
+          <mat-icon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#add"></use></svg></mat-icon
+          >New Chat
         </button>
         <button type="button" [attr.aria-expanded]="showHistory()" (click)="toggleHistory()">
-          <mat-icon>history</mat-icon>History
+          <mat-icon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#history"></use></svg></mat-icon
+          >History
         </button>
       </nav>
       <div class="mode-selector" aria-label="Conversation mode">
@@ -115,7 +148,18 @@
               (click)="refreshMessages()"
               aria-label="Refresh messages"
             >
-              <mat-icon>refresh</mat-icon>
+              <mat-icon
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <use href="ui-icons.svg#refresh"></use></svg
+              ></mat-icon>
             </button>
           </div>
         }
@@ -132,10 +176,8 @@
           }
           @if (!loading() && messages().length === 0) {
             <div class="welcome-state">
-              <mat-icon>smart_toy</mat-icon>
-              <h3>
-                Ask Yaman Ai
-              </h3>
+              <img class="robot" src="assistant-robot.svg" alt="" />
+              <h3>Ask Yaman Ai</h3>
               <p>
                 {{
                   mode() === 'FINANCE'
@@ -180,7 +222,18 @@
               (keydown)="onKeydown($event)"
             ></textarea>
             <button type="submit" aria-label="Send message" [disabled]="!canSend()">
-              <mat-icon>send</mat-icon>
+              <mat-icon
+                ><svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <use href="ui-icons.svg#send"></use></svg
+              ></mat-icon>
             </button>
           </div>
           <small>{{ disclaimer() || 'AI can make mistakes. Verify important information.' }}</small>
@@ -196,6 +249,19 @@
     [attr.aria-label]="isOpen() ? 'Close Ask Yaman Ai' : 'Ask Yaman Ai'"
     (click)="toggleAssistant()"
   >
-    <mat-icon>{{ isOpen() ? 'close' : 'smart_toy' }}</mat-icon>
+    @if (isOpen()) {
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+      >
+        <use href="ui-icons.svg#close"></use>
+      </svg>
+    } @else {
+      <span class="assistant-label">Ask Yaman Ai</span
+      ><img class="robot" src="assistant-robot.svg" alt="" />
+    }
   </button>
 </div>

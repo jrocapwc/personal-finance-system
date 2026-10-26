@@ -65,3 +65,11 @@ a:focus-visible {
 .mat-mdc-unelevated-button:not(:disabled):hover {
   background: var(--color-primary-hover);
 }
+
+// Self-hosted SVG symbols keep icons crisp even when public font CDNs are unavailable.
+mat-icon > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  fill: none;
+}

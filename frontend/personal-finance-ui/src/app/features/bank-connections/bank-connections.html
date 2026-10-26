@@ -1,143 +1,286 @@
 <div class="bank-page">
-  <header>
-    <span class="eyebrow">CONNECTED FINANCES</span>
-    <h1>Bank Connections</h1>
-    <p>Try a simulated bank account or review transactions from your own CSV statement.</p>
+  <header class="page-heading">
+    <div>
+      <h1>Connect Your Bank Account</h1>
+      <p>Import transactions from your bank statement, or try a simulated bank connection.</p>
+    </div>
+    <span class="page-tag">BANK CONNECTIONS</span>
   </header>
   @if (error()) {
     <p class="error notice" role="alert">{{ error() }}</p>
   }
   @if (result(); as summary) {
-    <div class="notice" role="status">
-      Import result: {{ summary.importedCount }} imported · {{ summary.skippedCount }} skipped
-      (including excluded rows) · {{ summary.failedCount }} failed ·
-      {{ summary.totalProcessed }} processed.
+    <div class="notice result" role="status">
+      Import result: {{ summary.importedCount }} imported &middot;
+      {{ summary.skippedCount }} skipped (including excluded rows) &middot;
+      {{ summary.failedCount }} failed &middot; {{ summary.totalProcessed }} processed.
     </div>
   }
-  <div class="sections">
-    <section class="card" aria-labelledby="demo-title">
-      <div class="card-heading">
-        <mat-icon>account_balance</mat-icon>
-        <h2 id="demo-title">Connect Demo Bank</h2>
-        <span class="badge">SIMULATION</span>
-      </div>
-      <p>
-        This fictional provider has no connection to a real bank. No banking credentials are needed.
-      </p>
-      @if (connection(); as bank) {
-        <h3>{{ bank.provider }}</h3>
-        <p>{{ bank.accountName }} · {{ bank.maskedAccountNumber }}</p>
-        <span class="badge">{{ bank.connected ? 'Demo connected' : 'Disconnected' }}</span>
-        <div class="balance">
-          <small>Simulated balance · demo data only</small
-          ><strong>PHP {{ bank.demoBalance }}</strong>
-        </div>
-        <p>Last demo sync: {{ bank.lastSync ? (bank.lastSync | date: 'medium') : 'Never' }}</p>
-        <p class="hint">
-          Sync adds fictional transactions to your finance reports. Disconnecting keeps imported
-          transactions.
-        </p>
-        <div class="actions">
-          @if (!bank.connected) {
-            <button mat-flat-button (click)="connect()" [disabled]="busy()">
-              Connect demo account
-            </button>
-          } @else {
-            <button mat-flat-button (click)="sync()" [disabled]="busy()">
-              Sync demo transactions</button
-            ><button mat-stroked-button (click)="disconnect()" [disabled]="busy()">
-              Disconnect
-            </button>
-          }
-        </div>
-      }
-    </section>
-    <section class="card" aria-labelledby="upload-title">
-      <div class="card-heading">
-        <mat-icon>upload_file</mat-icon>
-        <h2 id="upload-title">Upload Bank Statement</h2>
-      </div>
-      <p>
-        UTF-8 CSV · maximum 1 MiB · 1,000 rows · PHP only. Uploading creates a preview; transactions
-        are saved only after confirmation.
-      </p>
-      <p class="hint">
-        Raw files are not saved. Normalized previews expire after 30 minutes and are removed within
-        the following minute. Do not include passwords, PINs, OTPs or access tokens.
-      </p>
-      @if (!preview()) {
-        <label class="file-label"
-          >Choose CSV statement<input
-            type="file"
-            accept=".csv,text/csv"
-            (change)="selectFile($event)"
-            [disabled]="busy()"
-        /></label>
-        @if (headers().length) {
-          <div class="mapping">
-            <label
-              >Stable account label<input
-                [(ngModel)]="mapping['account']"
-                maxlength="40"
-                placeholder="e.g. personal-checking"
-                [disabled]="busy()"
-              /><small
-                >Reuse this label for future exports from the same account. Use an alias, not a real
-                account number.</small
-              ></label
-            >
-            <label
-              >Amount layout<select [(ngModel)]="mode" [disabled]="busy()">
-                <option value="signed">Signed amount (+ income, − expense)</option>
-                <option value="debit-credit">Separate debit / credit</option>
-              </select></label
-            >
-            @for (field of fields; track field[0]) {
-              @if (
-                (field[0] !== 'amount' || mode === 'signed') &&
-                ((field[0] !== 'debit' && field[0] !== 'credit') || mode === 'debit-credit')
-              ) {
-                <label
-                  >{{ field[1]
-                  }}<select [(ngModel)]="mapping[field[0]]" [disabled]="busy()">
-                    <option [ngValue]="-1">Not mapped</option>
-                    @for (header of headers(); track $index) {
-                      <option [ngValue]="$index">{{ $index + 1 }}. {{ header }}</option>
-                    }
-                  </select></label
-                >
-              }
+  <section class="bank-options" aria-labelledby="bank-options-title">
+    <div class="section-caption">
+      <h2 id="bank-options-title">Bank providers</h2>
+      <span>Bank connections coming soon. Upload CSV statements below.</span>
+    </div>
+    <div class="bank-grid">
+      @for (bank of banks; track bank.id) {
+        <article class="bank-card">
+          <span class="csv-tag" [class.demo-connected]="isDemoConnected(bank.id)">{{
+            isDemoConnected(bank.id) ? 'DEMO CONNECTED' : 'COMING SOON'
+          }}</span>
+          <div class="bank-wordmark" [class.has-logo]="!!bank.logo">
+            @if (bank.logo) {
+              <img [src]="bank.logo" [alt]="bank.name + ' logo'" />
+            } @else {
+              <mat-icon svgIcon="account_balance" aria-hidden="true"></mat-icon>
+              <strong>{{ bank.name }}</strong>
             }
-            <label
-              >Date order<select
-                [(ngModel)]="mapping['dateFormat']"
-                (ngModelChange)="dateConfirmed = false"
-                [disabled]="busy()"
-              >
-                <option value="ISO">Year-month-day (2026-10-26)</option>
-                <option value="DMY">Day/month/year (26/10/2026)</option>
-                <option value="MDY">Month/day/year (10/26/2026)</option>
-              </select></label
-            >
           </div>
-          <label class="check"
-            ><input type="checkbox" [(ngModel)]="dateConfirmed" [disabled]="busy()" />I confirm the
-            date order, including ambiguous dates such as 01/02/2026.</label
+          <p>{{ bank.subtitle }}</p>
+          <button
+            mat-flat-button
+            type="button"
+            class="bank-connect-button"
+            [class.connected]="isDemoConnected(bank.id)"
+            disabled
+            [attr.aria-label]="(isDemoConnected(bank.id) ? 'Demo connected to ' : 'Connect to ') + bank.name"
+            [attr.title]="isDemoConnected(bank.id) ? 'Simulated connection active.' : 'Bank connection coming soon.'"
           >
-          <p class="hint">
-            Map a unique bank reference to detect overlaps between exports. Without references, only
-            identical files are deduplicated. Review overlapping statements and exclude repeated
-            records yourself. Identical date, amount and description alone do not prove duplication.
-          </p>
-          <button mat-flat-button (click)="buildPreview()" [disabled]="busy() || !dateConfirmed">
-            Validate and preview
+            @if (isDemoConnected(bank.id)) {
+              <mat-icon svgIcon="check_circle" aria-hidden="true"></mat-icon>
+            }
+            {{ isDemoConnected(bank.id) ? 'Connected' : 'Connect' }}
+          </button>
+        </article>
+      }
+    </div>
+  </section>
+  <section class="demo-connection" aria-labelledby="demo-title">
+    <div class="demo-identity">
+      <div class="demo-icon">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <use href="ui-icons.svg#sync_alt"></use>
+        </svg>
+      </div>
+      <div>
+        <div class="demo-heading">
+          <h2 id="demo-title">Try a demo connection</h2>
+          <span class="badge">SIMULATION</span>
+        </div>
+        <p>Fictional account and transactions. No banking credentials needed.</p>
+      </div>
+    </div>
+    @if (connection(); as bank) {
+      <div class="demo-details">
+        @if (providerLogo(bank.providerId); as logo) {
+          <img class="connection-logo" [src]="logo" [alt]="bank.provider + ' logo'" />
+        } @else {
+          <mat-icon svgIcon="account_balance" aria-hidden="true"></mat-icon>
+        }
+        <strong>{{ bank.provider }}</strong
+        ><span>{{ bank.accountName }} &middot; {{ bank.maskedAccountNumber }}</span
+        ><span class="demo-status" [class.connected]="bank.connected">{{
+          bank.connected ? 'Demo connected' : 'Disconnected'
+        }}</span>
+      </div>
+      <div class="demo-balance">
+        <small>Simulated balance &middot; demo data</small
+        >
+        <div class="balance-value">
+          <strong>{{ balanceHidden() ? 'PHP ••••••' : 'PHP ' + bank.demoBalance }}</strong>
+          <button
+            mat-button
+            type="button"
+            (click)="balanceHidden.set(!balanceHidden())"
+            [attr.aria-label]="balanceHidden() ? 'Show balance' : 'Hide balance'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <use [attr.href]="balanceHidden() ? 'ui-icons.svg#visibility' : 'ui-icons.svg#visibility_off'"></use>
+            </svg>
+            {{ balanceHidden() ? 'Show' : 'Hide' }}
+          </button>
+        </div>
+        <small>Last sync: {{ bank.lastSync ? (bank.lastSync | date: 'medium') : 'Never' }}</small>
+      </div>
+      <div class="actions demo-actions">
+        @if (!bank.connected) {
+          <button mat-flat-button type="button" (click)="connect()" [disabled]="busy()">
+            Connect demo account
+          </button>
+        } @else {
+          <button mat-flat-button type="button" (click)="sync()" [disabled]="busy()">
+            Sync demo transactions</button
+          ><button mat-stroked-button type="button" (click)="disconnect()" [disabled]="busy()">
+            Disconnect
           </button>
         }
-      } @else {
-        <p>Preview ready below. Cancel to change file or column mappings.</p>
+      </div>
+    }
+    <p class="demo-note">
+      Demo sync adds fictional transactions to your reports. Disconnecting keeps previously imported
+      transactions.
+    </p>
+  </section>
+  <section class="upload-card" aria-labelledby="upload-title">
+    <div class="upload-heading">
+      <h2 id="upload-title">Or Upload Bank Statement</h2>
+      <p>Upload a CSV file from your bank. Review every transaction before saving.</p>
+    </div>
+    <input
+      #statementFile
+      class="file-input"
+      type="file"
+      accept=".csv,text/csv"
+      aria-label="Choose CSV statement"
+      (change)="selectFile($event)"
+      [disabled]="busy() || !!preview()"
+    />
+    @if (!preview()) {
+      <div class="upload-layout">
+        <button
+          class="drop-zone"
+          type="button"
+          [class.dragging]="dragging()"
+          [disabled]="busy()"
+          (click)="browseFile()"
+          (dragover)="dragOver($event)"
+          (dragleave)="dragging.set(false)"
+          (drop)="dropFile($event)"
+        >
+          <span class="upload-icon"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#upload_file"></use></svg
+          ></span>
+          @if (file) {
+            <strong>{{ file.name }}</strong
+            ><span
+              >Bank statement &middot;
+              {{
+                busy()
+                  ? 'Checking CSV format...'
+                  : headers().length
+                    ? 'Ready for column mapping'
+                    : 'Choose a valid CSV file'
+              }}</span
+            ><span class="browse-link">Choose a different file</span>
+          } @else {
+            <strong>Drag and drop your CSV file here</strong
+            ><span>or <span class="browse-link">click to browse</span></span>
+          }
+        </button>
+        <aside class="format-card" aria-labelledby="format-title">
+          <h3 id="format-title">Supported format</h3>
+          <ul>
+            <li>UTF-8 CSV bank statements</li>
+            <li>Signed amount or debit / credit columns</li>
+            <li>PHP transactions only</li>
+            <li>Up to 1 MiB &middot; 1,000 rows</li>
+          </ul>
+          <button mat-stroked-button type="button" (click)="browseFile()" [disabled]="busy()">
+            Browse File
+          </button>
+        </aside>
+      </div>
+      @if (headers().length) {
+        <div class="mapping">
+          <label
+            >Stable account label<input
+              [(ngModel)]="mapping['account']"
+              maxlength="40"
+              placeholder="e.g. personal-checking"
+              [disabled]="busy()"
+            /><small
+              >Reuse this label for future exports from the same account. Use an alias, not a real
+              account number.</small
+            ></label
+          >
+          <label
+            >Amount layout<select [(ngModel)]="mode" [disabled]="busy()">
+              <option value="signed">Signed amount (+ income, − expense)</option>
+              <option value="debit-credit">Separate debit / credit</option>
+            </select></label
+          >
+          @for (field of fields; track field[0]) {
+            @if (
+              (field[0] !== 'amount' || mode === 'signed') &&
+              ((field[0] !== 'debit' && field[0] !== 'credit') || mode === 'debit-credit')
+            ) {
+              <label
+                >{{ field[1]
+                }}<select [(ngModel)]="mapping[field[0]]" [disabled]="busy()">
+                  <option [ngValue]="-1">Not mapped</option>
+                  @for (header of headers(); track $index) {
+                    <option [ngValue]="$index">{{ $index + 1 }}. {{ header }}</option>
+                  }
+                </select></label
+              >
+            }
+          }
+          <label
+            >Date order<select
+              [(ngModel)]="mapping['dateFormat']"
+              (ngModelChange)="dateConfirmed = false"
+              [disabled]="busy()"
+            >
+              <option value="ISO">Year-month-day (2026-10-26)</option>
+              <option value="DMY">Day/month/year (26/10/2026)</option>
+              <option value="MDY">Month/day/year (10/26/2026)</option>
+            </select></label
+          >
+        </div>
+        <label class="check"
+          ><input type="checkbox" [(ngModel)]="dateConfirmed" [disabled]="busy()" />I confirm the
+          date order, including ambiguous dates such as 01/02/2026.</label
+        >
+        <p class="hint">
+          Map a unique bank reference to detect overlaps between exports. Without references, only
+          identical files are deduplicated. Review overlapping statements and exclude repeated
+          records yourself. Identical date, amount and description alone do not prove duplication.
+        </p>
+        <button mat-flat-button (click)="buildPreview()" [disabled]="busy() || !dateConfirmed">
+          Validate and preview
+        </button>
       }
-    </section>
-  </div>
+    } @else {
+      <div class="preview-ready">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <use href="ui-icons.svg#upload_file"></use>
+        </svg>
+        <div>
+          <strong>Your statement is ready for review</strong>
+          <p>Choose categories and confirm below. Cancel to change the file or column mappings.</p>
+        </div>
+      </div>
+    }
+    <p class="privacy-note">
+      Raw files are not saved. Normalized previews expire after 30 minutes and are removed within
+      the following minute while the service is running. Never upload banking passwords, PINs, OTPs
+      or access tokens.
+    </p>
+  </section>
   @if (preview(); as statement) {
     <section class="card preview" aria-labelledby="preview-title">
       <h2 id="preview-title">Review statement</h2>

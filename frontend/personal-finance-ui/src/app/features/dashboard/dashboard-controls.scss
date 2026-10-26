@@ -124,7 +124,7 @@
   color: var(--text-secondary);
 }
 .budget-fill.SAFE {
-  background: var(--positive);
+  background: var(--budget-fill);
 }
 .budget-fill.WARNING {
   background: var(--warning);
@@ -146,4 +146,7 @@
     max-width: 160px;
   }
 }
-.dashboard-controls select, .dashboard-controls input { border-color: var(--control-border); }
+.dashboard-controls select,
+.dashboard-controls input {
+  border-color: var(--control-border);
+}

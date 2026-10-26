@@ -11,12 +11,12 @@
           <img src="favicon.svg" width="43" height="43" alt="" />
         </div>
         <div>
-          <strong>YamanTracker</strong>
+          <strong>Yaman<span>Tracker</span></strong>
           <small>Personal Finance Management System</small>
         </div>
       </div>
 
-      <div class="nav-heading">MAIN MENU</div>
+      <div class="nav-heading">YOUR FINANCES</div>
 
       <mat-nav-list class="navigation">
         <a
@@ -25,7 +25,18 @@
           routerLinkActive="active-link"
           (click)="closeOnMobile()"
         >
-          <mat-icon matListItemIcon>dashboard</mat-icon>
+          <mat-icon matListItemIcon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#dashboard"></use></svg
+          ></mat-icon>
           <span matListItemTitle>Dashboard</span>
         </a>
 
@@ -35,7 +46,18 @@
           routerLinkActive="active-link"
           (click)="closeOnMobile()"
         >
-          <mat-icon matListItemIcon>receipt_long</mat-icon>
+          <mat-icon matListItemIcon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#receipt_long"></use></svg
+          ></mat-icon>
           <span matListItemTitle>Transactions</span>
         </a>
 
@@ -45,7 +67,18 @@
           routerLinkActive="active-link"
           (click)="closeOnMobile()"
         >
-          <mat-icon matListItemIcon>account_balance</mat-icon>
+          <mat-icon matListItemIcon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#account_balance"></use></svg
+          ></mat-icon>
           <span matListItemTitle>Budgets</span>
         </a>
 
@@ -55,7 +88,18 @@
           routerLinkActive="active-link"
           (click)="closeOnMobile()"
         >
-          <mat-icon matListItemIcon>category</mat-icon>
+          <mat-icon matListItemIcon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#category"></use></svg
+          ></mat-icon>
           <span matListItemTitle>Categories</span>
         </a>
         <a
@@ -64,13 +108,47 @@
           routerLinkActive="active-link"
           (click)="closeOnMobile()"
         >
-          <mat-icon matListItemIcon>sync_alt</mat-icon>
+          <mat-icon matListItemIcon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#sync_alt"></use></svg
+          ></mat-icon>
           <span matListItemTitle>Bank Connections</span>
         </a>
+        <button mat-list-item type="button" (click)="openAssistant()">
+          <mat-icon matListItemIcon
+            ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <use href="ui-icons.svg#smart_toy"></use></svg></mat-icon
+          ><span matListItemTitle>AI Assistant</span>
+        </button>
+        <button mat-list-item type="button" (click)="openAssistant(true)">
+          <mat-icon matListItemIcon
+            ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+              <use href="ui-icons.svg#history"></use></svg></mat-icon
+          ><span matListItemTitle>History</span>
+        </button>
       </mat-nav-list>
 
       <div class="sidebar-footer">
-        <mat-icon>auto_awesome</mat-icon>
+        <mat-icon
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <use href="ui-icons.svg#auto_awesome"></use></svg
+        ></mat-icon>
         <span>Manage your finances smarter.</span>
       </div>
     </mat-sidenav>
@@ -78,7 +156,18 @@
     <mat-sidenav-content>
       <mat-toolbar class="topbar">
         <button mat-icon-button aria-label="Toggle sidebar" (click)="drawer.toggle()">
-          <mat-icon>menu</mat-icon>
+          <mat-icon
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use href="ui-icons.svg#menu"></use></svg
+          ></mat-icon>
         </button>
 
         <span class="toolbar-brand">YamanTracker</span>
@@ -88,19 +177,18 @@
 
         <button
           mat-icon-button
+          class="theme-switch"
+          [class.is-dark]="isDarkMode()"
+          [attr.aria-pressed]="isDarkMode()"
           type="button"
           [attr.aria-label]="isDarkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
           (click)="toggleTheme()"
         >
-          <mat-icon>
-            {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
-          </mat-icon>
+          <span class="theme-thumb"></span>
         </button>
 
         <div class="profile">
-          <div class="profile-avatar">
-            <mat-icon>person</mat-icon>
-          </div>
+          <div class="profile-avatar" aria-hidden="true">{{ initials() }}</div>
           <span [title]="auth.currentUser()?.email ?? ''">{{ auth.currentUser()?.name }}</span>
         </div>
 

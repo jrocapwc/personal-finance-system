@@ -1,10 +1,11 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
+import { DomSanitizer } from '@angular/platform-browser';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable, finalize } from 'rxjs';
+import { Observable, finalize, switchMap, tap } from 'rxjs';
 import {
   BankService,
   DemoConnection,
@@ -25,12 +26,23 @@ export class BankConnections {
   private readonly api = inject(BankService);
   private readonly destroy = inject(DestroyRef);
   readonly connection = signal<DemoConnection | null>(null);
+  readonly balanceHidden = signal(false);
   readonly categories = signal<CategoryResponse[]>([]);
   readonly headers = signal<string[]>([]);
   readonly preview = signal<StatementPreview | null>(null);
   readonly result = signal<ImportResult | null>(null);
   readonly busy = signal(false);
   readonly error = signal('');
+  readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('statementFile');
+  readonly dragging = signal(false);
+  readonly banks = [
+    { id: 'bpi', name: 'BPI', subtitle: 'Bank of the Philippine Islands', logo: 'banks/bpi.svg' },
+    { id: 'bdo', name: 'BDO', subtitle: 'BDO Unibank', logo: 'banks/bdo.svg' },
+    { id: 'metrobank', name: 'Metrobank', subtitle: 'Metrobank', logo: 'banks/metrobank.svg' },
+    { id: 'security', name: 'Security Bank', subtitle: 'Security Bank', logo: 'banks/security-bank.svg' },
+    { id: 'unionbank', name: 'UnionBank', subtitle: 'UnionBank', logo: 'banks/unionbank.svg' },
+    { id: 'other', name: 'Other Bank', subtitle: 'Any compatible bank statement', logo: null },
+  ];
   file: File | null = null;
   mode = 'signed';
   dateConfirmed = false;
@@ -55,6 +67,19 @@ export class BankConnections {
     ['currency', 'Currency (optional; PHP only)'],
   ];
   constructor() {
+    // Google's static Material icon: no remote font or uploaded SVG content.
+    inject(MatIconRegistry).addSvgIconLiteral(
+      'account_balance',
+      inject(DomSanitizer).bypassSecurityTrustHtml(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M4 10h3v7H4zm6.5 0h3v7h-3zM2 19h20v3H2zm15-9h3v7h-3zM12 1 2 6v2h20V6z"/></svg>',
+      ),
+    );
+    inject(MatIconRegistry).addSvgIconLiteral(
+      'check_circle',
+      inject(DomSanitizer).bypassSecurityTrustHtml(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-2 15-5-5 1.4-1.4L10 14.2l7.6-7.6L19 8z"/></svg>',
+      ),
+    );
     this.run(this.api.connection(), (value) => this.connection.set(value));
     inject(CategoryService)
       .list()
@@ -63,6 +88,13 @@ export class BankConnections {
         next: (rows) => this.categories.set(rows),
         error: () => this.error.set('Unable to load categories. Reload the page.'),
       });
+  }
+  providerLogo(providerId: string) {
+    return this.banks.find((bank) => bank.id === providerId)?.logo;
+  }
+  isDemoConnected(providerId: string) {
+    const connection = this.connection();
+    return connection?.providerId === providerId && connection.simulated && connection.connected;
   }
   private run<T>(request: Observable<T>, next: (value: T) => void) {
     if (this.busy()) return;
@@ -82,25 +114,54 @@ export class BankConnections {
       });
   }
   connect() {
+    if (this.busy()) return;
     this.run(this.api.connect(), (value) => this.connection.set(value));
   }
   disconnect() {
+    if (this.busy()) return;
     this.run(this.api.disconnect(), (value) => this.connection.set(value));
   }
   sync() {
+    if (this.busy()) return;
     this.result.set(null);
-    this.run(this.api.sync(), (value) => {
-      this.result.set(value);
-      this.api
-        .connection()
-        .pipe(takeUntilDestroyed(this.destroy))
-        .subscribe((value) => this.connection.set(value));
-    });
+    this.run(
+      this.api.sync().pipe(
+        tap((value) => this.result.set(value)),
+        switchMap(() => this.api.connection()),
+      ),
+      (value) => this.connection.set(value),
+    );
+  }
+  browseFile() {
+    if (!this.busy() && !this.preview()) this.fileInput()?.nativeElement.click();
+  }
+  dragOver(event: DragEvent) {
+    event.preventDefault();
+    if (!this.busy() && !this.preview()) this.dragging.set(true);
+  }
+  dropFile(event: DragEvent) {
+    event.preventDefault();
+    this.dragging.set(false);
+    if (this.busy() || this.preview()) return;
+    const files = event.dataTransfer?.files;
+    if (!files?.length) return;
+    if (files.length !== 1) {
+      this.error.set('Choose one CSV statement at a time.');
+      return;
+    }
+    this.loadFile(files[0]);
   }
   selectFile(event: Event) {
     const input = event.target as HTMLInputElement;
-    this.file = input.files?.[0] ?? null;
+    const file = input.files?.[0] ?? null;
+    // Allow choosing the same file again after cancellation or a validation error.
+    input.value = '';
+    if (file && !this.busy() && !this.preview()) this.loadFile(file);
+  }
+  private loadFile(file: File) {
+    this.file = file;
     this.headers.set([]);
+    this.error.set('');
     this.result.set(null);
     this.dateConfirmed = false;
     if (!this.file) return;
@@ -179,5 +240,6 @@ export class BankConnections {
     this.preview.set(null);
     this.file = null;
     this.headers.set([]);
+    this.dragging.set(false);
   }
 }

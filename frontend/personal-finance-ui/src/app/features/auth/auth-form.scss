@@ -2,12 +2,12 @@
   display: block;
 }
 h1 {
-  text-align: center;
+  text-align: left;
   font-size: 26px;
   margin: 0 0 10px;
 }
 .intro {
-  text-align: center;
+  text-align: left;
   color: var(--text-secondary);
   margin: 0 0 28px;
   line-height: 1.5;
@@ -84,7 +84,7 @@ input[aria-invalid='true'] {
   min-height: 48px;
   border: 0;
   border-radius: 9px;
-  background: var(--color-primary);
+  background: var(--brand-gradient);
   color: var(--on-primary);
   font-weight: 600;
   cursor: pointer;
@@ -116,7 +116,7 @@ input[aria-invalid='true'] {
   }
 }
 .auth-link {
-  text-align: center;
+  text-align: left;
   font-size: 14px;
   color: var(--text-secondary);
   margin: 26px 0 0;
@@ -127,5 +127,9 @@ a {
   font-weight: 600;
   text-underline-offset: 3px;
 }
-.submit:not(:disabled):hover { background: var(--color-primary-hover); }
-input { border-color: var(--control-border); }
+.submit:not(:disabled):hover {
+  background: var(--color-primary-hover);
+}
+input {
+  border-color: var(--control-border);
+}

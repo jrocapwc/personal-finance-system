@@ -3,49 +3,66 @@
   aria-label="Financial dashboard"
   [attr.aria-busy]="store.state().loading"
 >
-  <div class="page-heading">
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome back to YamanTracker. Here's your financial overview.</p>
+  <div class="dashboard-top">
+    <div class="page-heading">
+      <div>
+        <h1>Welcome back, {{ firstName() }}!</h1>
+        <p>Here's your financial overview for {{ store.periodLabel() }}.</p>
+      </div>
+      <span class="period-pill">{{ store.periodLabel() }}</span>
     </div>
-    <span class="period-pill">{{ store.periodLabel() }}</span>
-  </div>
 
-  <div class="dashboard-controls" [formGroup]="controls" role="group" aria-label="Reporting period">
-    <div>
-      <label for="report-month">Month</label
-      ><select id="report-month" formControlName="month">
-        @for (month of monthNames; track $index) {
-          <option [ngValue]="$index + 1">{{ month }}</option>
-        }
-      </select>
-    </div>
-    <div>
-      <label for="report-year">Year</label
-      ><input
-        id="report-year"
-        type="number"
-        formControlName="year"
-        min="2000"
-        max="2100"
-        step="1"
-        aria-describedby="period-error"
-        [attr.aria-invalid]="controls.controls.year.invalid"
-      />
-    </div>
-    <button
-      class="action-button"
-      type="button"
-      (click)="store.refresh()"
-      [disabled]="controls.invalid || store.state().loading"
+    <div
+      class="dashboard-controls"
+      [formGroup]="controls"
+      role="group"
+      aria-label="Reporting period"
     >
-      <mat-icon aria-hidden="true">refresh</mat-icon>Refresh
-    </button>
-    @if (controls.invalid) {
-      <p id="period-error" class="error-text">Choose a year from 2000 to 2100.</p>
-    }
+      <div>
+        <label for="report-month">Month</label
+        ><select id="report-month" formControlName="month">
+          @for (month of monthNames; track $index) {
+            <option [ngValue]="$index + 1">{{ month }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label for="report-year">Year</label
+        ><input
+          id="report-year"
+          type="number"
+          formControlName="year"
+          min="2000"
+          max="2100"
+          step="1"
+          aria-describedby="period-error"
+          [attr.aria-invalid]="controls.controls.year.invalid"
+        />
+      </div>
+      <button
+        class="action-button"
+        type="button"
+        (click)="store.refresh()"
+        [disabled]="controls.invalid || store.state().loading"
+      >
+        <mat-icon aria-hidden="true"
+          ><svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <use href="ui-icons.svg#refresh"></use></svg></mat-icon
+        >Refresh
+      </button>
+      @if (controls.invalid) {
+        <p id="period-error" class="error-text">Choose a year from 2000 to 2100.</p>
+      }
+    </div>
   </div>
-
   @if (store.state().loading) {
     <p class="dashboard-notice" role="status">
       <span class="loading-dot" aria-hidden="true"></span>Loading financial dashboard...
@@ -87,7 +104,18 @@
           ><mat-card-content>
             <div class="summary-heading">
               <div class="summary-icon">
-                <mat-icon>{{ item.icon }}</mat-icon>
+                <mat-icon
+                  ><svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <use [attr.href]="'ui-icons.svg#' + item.icon"></use></svg
+                ></mat-icon>
               </div>
               <span>{{ item.label }}</span>
             </div>
@@ -237,7 +265,19 @@
                     <td class="description">{{ transaction.description || 'No description' }}</td>
                     <td>
                       <span class="transaction-category"
-                        ><mat-icon>{{ transaction.icon }}</mat-icon
+                        ><mat-icon
+                          ><svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="1.7"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                          >
+                            <use
+                              [attr.href]="'ui-icons.svg#' + transaction.icon"
+                            ></use></svg></mat-icon
                         >{{ transaction.category }}</span
                       >
                     </td>

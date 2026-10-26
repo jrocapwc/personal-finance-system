@@ -23,13 +23,13 @@ public class BankService {
     public BankService(JdbcTemplate db, UserRepository users, CategoryRepository categories, TransactionRepository transactions, Validator validator) {
         this.db = db; this.users = users; this.categories = categories; this.transactions = transactions; this.validator = validator;
     }
-    public record Connection(String provider, String accountName, String maskedAccountNumber, boolean simulated,
+    public record Connection(String providerId, String provider, String accountName, String maskedAccountNumber, boolean simulated,
                              boolean connected, String demoBalance, String currency, Instant lastSync) {}
     public Connection connection(UUID owner) {
         var list = db.query("SELECT connected,last_sync FROM demo_connections WHERE user_id=?", (rs,n) ->
-                new Connection("Metrobank", "My Payroll Account", "•••• 0042", true,
+                new Connection("metrobank", "Metrobank", "My Payroll Account", "•••• 0042", true,
                         rs.getBoolean(1), "128954.75", "PHP", rs.getTimestamp(2) == null ? null : rs.getTimestamp(2).toInstant()), owner);
-        return list.isEmpty() ? new Connection("Metrobank", "My Everyday Account", "•••• 0042", true, false, "128954.75", "PHP", null) : list.getFirst();
+        return list.isEmpty() ? new Connection("metrobank", "Metrobank", "My Everyday Account", "•••• 0042", true, false, "128954.75", "PHP", null) : list.getFirst();
     }
     @Transactional
     public Connection connect(UUID owner, boolean connected) {

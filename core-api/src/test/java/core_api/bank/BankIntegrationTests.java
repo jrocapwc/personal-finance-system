@@ -65,6 +65,20 @@ class BankIntegrationTests extends JwtTestSupport {
   }
  }
  String base(){return "http://127.0.0.1:"+port;}
+ @Test void connectionApiExposesStableProviderIdAcrossConnectReloadAndDisconnect() throws Exception {
+  var u=account();
+  boolean connected=false;
+  for (var action:List.of(new String[]{"GET",""},new String[]{"POST","/demo"},new String[]{"GET",""},new String[]{"DELETE","/demo"})) {
+   var response=request(u,action[0],action[1],null);
+   assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+   var connection=json.readTree(response.body());
+   assertThat(connection.path("providerId").asString()).isEqualTo("metrobank");
+   assertThat(connection.path("simulated").asBoolean()).isTrue();
+   if (action[0].equals("POST")) connected=true;
+   if (action[0].equals("DELETE")) connected=false;
+   assertThat(connection.path("connected").asBoolean()).isEqualTo(connected);
+  }
+ }
  HttpResponse<String> request(User u,String method,String path,String body) throws Exception{var builder=HttpRequest.newBuilder(URI.create(base()+"/api/v1/bank-connections"+path));if(u!=null)builder.header("Authorization","Bearer "+tokens.issue(u.getId()));if(body!=null)builder.header("Content-Type","application/json");try(var client=HttpClient.newHttpClient()){return client.send(builder.method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());}}
  @Test void syncRequiresConnectionRepeatsSkipAndDisconnectKeepsTransactions() throws Exception{
   var u=account();when(provider.fetch()).thenReturn(List.of(json.readTree("{\"externalTransactionId\":\"bank-test\",\"type\":\"EXPENSE\",\"amount\":\"12.34\",\"description\":\"Fictional food\",\"transactionDate\":\"2026-10-01\",\"categoryHint\":\"FOOD\",\"source\":\"MOCK_PROVIDER\"}")));

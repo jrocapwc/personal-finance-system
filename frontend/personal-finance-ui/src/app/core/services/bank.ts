@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs';
 import { FinanceChanges } from './finance-changes';
 export interface DemoConnection {
+  providerId: string;
   provider: string;
   accountName: string;
   maskedAccountNumber: string;

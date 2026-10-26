@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from '../../core/services/auth';
 import { DashboardStore } from './dashboard.store';
 import { expenseSlices, MONTH_NAMES } from './dashboard.mapper';
 @Component({
@@ -16,6 +17,10 @@ import { expenseSlices, MONTH_NAMES } from './dashboard.mapper';
 })
 export class Dashboard {
   readonly store = inject(DashboardStore);
+  private readonly auth = inject(AuthService);
+  readonly firstName = computed(
+    () => this.auth.currentUser()?.name.trim().split(/\s+/)[0] || 'there',
+  );
   readonly currencyCode = 'PHP';
   readonly monthNames = MONTH_NAMES;
   readonly controls = inject(FormBuilder).nonNullable.group({

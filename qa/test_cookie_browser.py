@@ -244,21 +244,94 @@ def test_bank_connections_csv_review_themes_and_mobile(browser_context, website)
     page = browser_context.new_page()
     register_and_login(page, "Bank Import Browser")
     page.get_by_role("link", name="Bank Connections").click()
-    expect(page.get_by_role("heading", name="Bank Connections", exact=True)).to_be_visible()
+    expect(page.get_by_role("heading", name="Connect Your Bank Account", exact=True)).to_be_visible()
     expect(page.get_by_text("SIMULATION", exact=True)).to_be_visible()
     assert page.locator("input[type=password]").count() == 0
+
+    def assert_provider_placeholders(connected=False):
+        page.wait_for_load_state('networkidle')
+        cards = page.locator('.bank-card')
+        before = cards.all_text_contents()
+        current_url = page.url
+        requests, choosers = [], []
+        on_request = lambda request: requests.append(request.url)
+        on_chooser = lambda chooser: choosers.append(chooser)
+        page.on('request', on_request)
+        page.on('filechooser', on_chooser)
+        try:
+            assert cards.count() == 6
+            logos = cards.locator('img')
+            assert logos.count() == 5
+            for logo in logos.all():
+                assert logo.evaluate('image => image.complete && image.naturalWidth > 0')
+                assert logo.get_attribute('src').startswith('banks/')
+                assert logo.get_attribute('alt').endswith(' logo')
+                assert logo.evaluate('image => getComputedStyle(image).objectFit') == 'contain'
+                assert logo.evaluate('image => getComputedStyle(image).filter') == 'none'
+            expect(cards.last.locator('mat-icon')).to_have_attribute('svgIcon', 'account_balance')
+            assert cards.last.locator('mat-icon path').evaluate('path => getComputedStyle(path).fill') != 'none'
+            for card in cards.all():
+                button = card.locator('button')
+                active = connected and card.locator('img[alt="Metrobank logo"]').count() == 1
+                expect(button).to_be_disabled()
+                expect(button).to_have_text('Connected' if active else 'Connect')
+                expect(card.locator('.csv-tag')).to_have_text('DEMO CONNECTED' if active else 'COMING SOON')
+                if active:
+                    expect(button.locator('mat-icon')).to_have_attribute('svgIcon', 'check_circle')
+                assert button.evaluate('element => getComputedStyle(element).cursor') == 'not-allowed'
+                button.evaluate('element => { element.click(); element.click(); }')
+            page.wait_for_timeout(200)
+            assert not [url for url in requests if '/api/' in url]
+            assert choosers == []
+            assert page.url == current_url
+            assert cards.all_text_contents() == before
+        finally:
+            page.remove_listener('request', on_request)
+            page.remove_listener('filechooser', on_chooser)
+
+    assert_provider_placeholders()
+    logo_screenshots = ROOT / 'core-api/target/qa-bank-screenshots'
+    logo_screenshots.mkdir(parents=True, exist_ok=True)
+    page.locator('.page-heading').scroll_into_view_if_needed()
+    page.screenshot(path=str(logo_screenshots / 'logos-light.png'))
     page.get_by_role("button", name="Connect demo account", exact=True).click()
     expect(page.get_by_text("Demo connected", exact=True)).to_be_visible()
+    assert_provider_placeholders(connected=True)
+    page.reload()
+    expect(page.get_by_text("Demo connected", exact=True)).to_be_visible()
+    assert_provider_placeholders(connected=True)
+    page.locator('.page-heading').scroll_into_view_if_needed()
+    page.screenshot(path=str(logo_screenshots / 'demo-connected-light.png'))
+    page.get_by_role('button', name='Switch to dark mode').click()
+    assert_provider_placeholders(connected=True)
+    page.locator('.page-heading').scroll_into_view_if_needed()
+    page.screenshot(path=str(logo_screenshots / 'demo-connected-dark.png'))
+    page.set_viewport_size({'width': 390, 'height': 844})
+    assert_provider_placeholders(connected=True)
+    assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
+    page.set_viewport_size({'width': 1440, 'height': 1000})
+    page.get_by_role('button', name='Switch to light mode').click()
     page.get_by_role("button", name="Sync demo transactions", exact=True).click()
     expect(page.locator('[role=status]').filter(has_text="Import result")).to_contain_text("5 imported")
     page.get_by_role("button", name="Sync demo transactions", exact=True).click()
     expect(page.locator('[role=status]').filter(has_text="Import result")).to_contain_text("0 imported")
     page.get_by_role("button", name="Disconnect", exact=True).click()
     expect(page.get_by_role("button", name="Connect demo account", exact=True)).to_be_visible()
+    assert_provider_placeholders()
     statement = b'Date,Description,Amount,Reference,Currency\n2026-10-15,"Fictional Food, shop",-25.50,qa-food-1,PHP\n2026-02-30,Invalid date,-2.00,qa-invalid,PHP\n2026-10-16,Salary,100.25,qa-salary-1,PHP\n'
 
-    def upload_and_preview():
-        page.locator('input[type=file]').set_input_files({"name": "fictional.csv", "mimeType": "text/csv", "buffer": statement})
+    def upload_and_preview(drop=False):
+        if drop:
+            page.locator('.drop-zone').evaluate("""(element, csv) => {
+                const transfer = new DataTransfer();
+                transfer.items.add(new File([csv], 'fictional.csv', {type: 'text/csv'}));
+                element.dispatchEvent(new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: transfer}));
+                element.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: transfer}));
+            }""", statement.decode())
+        else:
+            with page.expect_file_chooser() as chooser:
+                page.get_by_role('button', name='Browse File', exact=True).click()
+            chooser.value.set_files({"name": "fictional.csv", "mimeType": "text/csv", "buffer": statement})
         page.get_by_label("Stable account label", exact=False).fill("fictional-checking")
         page.get_by_label("I confirm the date order", exact=False).check()
         page.get_by_role("button", name="Validate and preview", exact=True).click()
@@ -275,15 +348,19 @@ def test_bank_connections_csv_review_themes_and_mobile(browser_context, website)
     page.screenshot(path=str(screenshots / "light-desktop.png"), full_page=True)
     page.get_by_role("button", name="Switch to dark mode").click()
     expect(page.locator(".app-shell.dark-theme")).to_be_visible()
+    assert_provider_placeholders()
+    page.locator('.page-heading').scroll_into_view_if_needed()
+    page.screenshot(path=str(logo_screenshots / 'logos-dark.png'))
     page.screenshot(path=str(screenshots / "dark-desktop.png"), full_page=True)
     page.set_viewport_size({"width": 390, "height": 844})
     page.wait_for_timeout(400)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Page must fit mobile width; preview scrolls internally"
+    assert_provider_placeholders()
     page.screenshot(path=str(screenshots / "dark-mobile.png"), full_page=True)
     page.get_by_role("button", name="Confirm selected transactions").click()
     expect(page.locator('[role=status]').filter(has_text="Import result")).to_contain_text("2 imported")
     page.set_viewport_size({"width": 1440, "height": 1000})
-    upload_and_preview()
+    upload_and_preview(drop=True)
     expect(page.get_by_label("Include row 1", exact=True)).to_be_disabled()
     expect(page.get_by_label("Include row 3", exact=True)).to_be_disabled()
     page.get_by_role("button", name="Cancel import / change mapping", exact=True).click()
@@ -299,17 +376,30 @@ def test_yamantracker_branding_and_theme_surfaces(browser_context, website):
     brand = 'FinanceAI' if baseline else 'YamanTracker'
     toggle = 'Open AI Assistant' if baseline else 'Ask Yaman Ai'
     region = 'AI Finance Assistant' if baseline else 'Ask Yaman Ai'
-    shots = ROOT / 'core-api/target/qa-branding-screenshots' / ('before' if baseline else 'after')
+    shots = ROOT / 'core-api/target/qa-reference-screenshots' / ('before' if baseline else 'after')
     shots.mkdir(parents=True, exist_ok=True)
     page = browser_context.new_page()
     page.goto('/login')
     expect(page.locator('.auth-brand')).to_contain_text(brand)
     page.screenshot(path=str(shots / 'login-light.png'))
+    if not baseline:
+        expect(page.locator('.auth-story')).to_be_visible()
+        assert page.locator('.auth-skyline').evaluate('img => img.complete && img.naturalWidth > 0')
+        assert page.request.get(website + '/ui-icons.svg').status == 200
+        assert page.request.get(website + '/assistant-robot.svg').status == 200
     page.goto('/register')
     expect(page.locator('.auth-brand')).to_contain_text(brand)
     page.screenshot(path=str(shots / 'register-light.png'))
     register_and_login(page, 'Branding Review')
     expect(page.locator('.brand')).to_contain_text(brand)
+    if not baseline:
+        expect(page.get_by_role('heading', name='Welcome back, Branding!', exact=True)).to_be_visible()
+        page.locator('.navigation').get_by_role('button', name='AI Assistant', exact=True).click()
+        expect(page.get_by_role('region', name='Ask Yaman Ai', exact=True)).to_be_visible()
+        page.locator('.header-close').click()
+        page.locator('.navigation').get_by_role('button', name='History', exact=True).click()
+        expect(page.get_by_role('heading', name='Previous conversations')).to_be_visible()
+        page.locator('.header-close').click()
     if not baseline:
         expect(page).to_have_title('Dashboard | YamanTracker')
         assert page.locator('link[rel=icon]').get_attribute('href') == 'favicon.svg'
@@ -320,6 +410,8 @@ def test_yamantracker_branding_and_theme_surfaces(browser_context, website):
     page.get_by_role('button', name='Sync demo transactions', exact=True).click()
     expect(page.locator('[role=status]').filter(has_text='Import result')).to_contain_text('5 imported')
     page.screenshot(path=str(shots / 'bank-light.png'))
+    page.locator('.upload-card').scroll_into_view_if_needed()
+    page.screenshot(path=str(shots / 'bank-upload-light.png'))
     page.goto('/dashboard')
     expect(page.locator('app-dashboard .summary-grid')).to_be_visible()
     page.wait_for_load_state('networkidle')
@@ -331,8 +423,8 @@ def test_yamantracker_branding_and_theme_surfaces(browser_context, website):
     page.get_by_role('button', name='Switch to dark mode').click()
     expect(page.locator('.app-shell.dark-theme')).to_be_visible()
     if not baseline:
-        assert page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim()") == '#ffad73'
-        assert panel.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(39, 39, 39)'
+        assert page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim()") == '#ff9b37'
+        assert panel.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(27, 36, 39)'
     page.screenshot(path=str(shots / 'assistant-dark.png'))
     page.get_by_role('button', name='Close AI Assistant' if baseline else 'Close Ask Yaman Ai').first.click()
     page.goto('/categories')
@@ -340,15 +432,17 @@ def test_yamantracker_branding_and_theme_surfaces(browser_context, website):
     dialog = page.locator('dialog[open]')
     expect(dialog).to_be_visible()
     if not baseline:
-        assert dialog.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(39, 39, 39)'
+        assert dialog.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(27, 36, 39)'
         assert dialog.locator('input').first.evaluate("el => getComputedStyle(el).color") == 'rgb(247, 247, 247)'
     page.screenshot(path=str(shots / 'category-dialog-dark.png'))
     page.keyboard.press('Escape')
     page.goto('/bank-connections')
     if not baseline:
         material_button = page.get_by_role('button', name='Sync demo transactions', exact=True)
-        assert material_button.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(255, 173, 115)'
+        assert material_button.evaluate("el => getComputedStyle(el).backgroundColor") == 'rgb(255, 155, 55)'
     page.screenshot(path=str(shots / 'bank-dark.png'))
+    page.locator('.upload-card').scroll_into_view_if_needed()
+    page.screenshot(path=str(shots / 'bank-upload-dark.png'))
     page.reload()
     expect(page.locator('.app-shell.dark-theme')).to_be_visible()
     page.set_viewport_size({'width': 390, 'height': 844})

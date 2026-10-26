@@ -55,6 +55,24 @@ export class MainLayout {
   );
   private readonly breakpoints = inject(BreakpointObserver);
 
+  @ViewChild(AiAssistant) assistant?: AiAssistant;
+  readonly initials = computed(() =>
+    (this.auth.currentUser()?.name ?? '')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase(),
+  );
+
+  openAssistant(history = false): void {
+    if (!this.assistant) return;
+    if (!this.assistant.isOpen()) this.assistant.toggleAssistant();
+    if (this.assistant.showHistory() !== history) this.assistant.toggleHistory();
+    this.closeOnMobile();
+  }
+
   @ViewChild('drawer') drawer?: MatSidenav;
 
   readonly isDarkMode = this.theme.isDarkMode;

@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { BankConnections } from './bank-connections';
 import { BankService, DemoConnection, StatementPreview } from '../../core/services/bank';
 import { CategoryService } from '../../core/services/category';
 const demo: DemoConnection = {
-  provider: 'Harbor Demo Bank',
+  providerId: 'metrobank',
+  provider: 'Metrobank',
   accountName: 'Fictional Everyday',
   maskedAccountNumber: '0042',
   simulated: true,
@@ -109,8 +110,20 @@ describe('Bank Connections review', () => {
     expect(fixture.nativeElement.querySelector('input[type=password]')).toBeNull();
     page.connect();
     expect(page.connection()?.connected).toBe(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Demo connected to Metrobank"]').disabled).toBe(true);
+    fixture.nativeElement.querySelector('[aria-label="Hide balance"]').click();
+    fixture.detectChanges();
+    const balance = fixture.nativeElement.querySelector('.balance-value');
+    expect(balance.textContent).not.toContain(demo.demoBalance);
+    expect(balance.querySelector('strong').textContent).toContain('PHP');
+    fixture.nativeElement.querySelector('[aria-label="Show balance"]').click();
+    fixture.detectChanges();
+    expect(balance.textContent).toContain(demo.demoBalance);
     page.disconnect();
     expect(page.connection()?.connected).toBe(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Connect to Metrobank"]').disabled).toBe(true);
   });
   it('requires confirmed date order before creating a preview', () => {
     const { page } = create();
@@ -176,5 +189,137 @@ describe('Bank Connections review', () => {
     } as unknown as Event);
     expect(api.columns).not.toHaveBeenCalled();
     expect(page.error()).toContain('1 MiB');
+  });
+  it('keeps every provider placeholder disabled without opening files or changing state', () => {
+    const { page, fixture } = create();
+    expect(fixture.nativeElement.querySelectorAll('.bank-card')).toHaveLength(6);
+    expect(fixture.nativeElement.querySelectorAll('.bank-card img')).toHaveLength(5);
+    expect(fixture.nativeElement.querySelector('.bank-card:last-child mat-icon').getAttribute('svgIcon')).toBe('account_balance');
+    expect(page.providerLogo('bpi')).toBe('banks/bpi.svg');
+    expect(page.providerLogo('bdo')).toBe('banks/bdo.svg');
+    expect(page.providerLogo('unknown-provider')).toBeUndefined();
+    const picker = fixture.nativeElement.querySelector('input[type=file]') as HTMLInputElement;
+    const browse = vi.spyOn(picker, 'click').mockImplementation(() => {});
+    const state = page.banks.map((bank) => ({ ...bank }));
+    for (const button of fixture.nativeElement.querySelectorAll('.bank-connect-button')) {
+      expect(button.disabled).toBe(true);
+      expect(button.type).toBe('button');
+      expect(button.textContent.trim()).toBe('Connect');
+      button.click();
+      button.click();
+    }
+    expect(page.banks).toEqual(state);
+    expect(page.banks.every((bank) => !page.isDemoConnected(bank.id))).toBe(true);
+    expect(browse).not.toHaveBeenCalled();
+    expect(api.connect).not.toHaveBeenCalled();
+    expect(api.sync).not.toHaveBeenCalled();
+    expect(api.columns).not.toHaveBeenCalled();
+    expect(api.preview).not.toHaveBeenCalled();
+    expect(api.confirm).not.toHaveBeenCalled();
+  });
+  it('restores a connected provider from persisted API state using its stable ID', () => {
+    api.connection.mockReturnValue(of({ ...demo, provider: 'Renamed demo provider', connected: true }));
+    const { fixture } = create();
+    const button = fixture.nativeElement.querySelector('[aria-label="Demo connected to Metrobank"]');
+    expect(button.textContent.trim()).toBe('Connected');
+    expect(button.disabled).toBe(true);
+    expect(button.classList.contains('connected')).toBe(true);
+    expect(button.querySelector('mat-icon')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('DEMO CONNECTED');
+    button.click();
+    expect(api.connect).not.toHaveBeenCalled();
+    expect(api.columns).not.toHaveBeenCalled();
+  });
+  it('derives each provider status only from matching simulated API state', () => {
+    const { page } = create();
+    // Future-provider fixtures exercise ID matching, not additional backend support.
+    for (const bank of page.banks) {
+      page.connection.set({ ...demo, providerId: bank.id, connected: true });
+      expect(page.banks.filter((bank) => page.isDemoConnected(bank.id)).map((bank) => bank.id)).toEqual([bank.id]);
+    }
+    page.connection.set({ ...demo, providerId: 'unknown', connected: true });
+    expect(page.banks.some((bank) => page.isDemoConnected(bank.id))).toBe(false);
+    page.connection.set({ ...demo, connected: true, simulated: false });
+    expect(page.isDemoConnected('metrobank')).toBe(false);
+  });
+  it('does not change connected state after failed connect or disconnect requests', () => {
+    const { page } = create();
+    api.connect.mockReturnValue(throwError(() => ({ error: { message: 'Connect failed' } })));
+    page.connect();
+    expect(page.isDemoConnected('metrobank')).toBe(false);
+    expect(page.error()).toBe('Connect failed');
+    page.connection.set({ ...demo, connected: true });
+    api.disconnect.mockReturnValue(throwError(() => ({ error: { message: 'Disconnect failed' } })));
+    page.disconnect();
+    expect(page.isDemoConnected('metrobank')).toBe(true);
+    expect(page.error()).toBe('Disconnect failed');
+  });
+  it('serializes sync refresh with mutations and handles refresh failure', () => {
+    const { page } = create();
+    page.connect();
+    const refresh = new Subject<DemoConnection>();
+    api.connection.mockReturnValue(refresh);
+    page.sync();
+    expect(page.busy()).toBe(true);
+    page.disconnect();
+    expect(api.disconnect).not.toHaveBeenCalled();
+    refresh.next({ ...demo, connected: true });
+    refresh.complete();
+    expect(page.busy()).toBe(false);
+    page.disconnect();
+    expect(page.isDemoConnected('metrobank')).toBe(false);
+    api.connection.mockReturnValue(throwError(() => ({ error: { message: 'Refresh failed' } })));
+    page.sync();
+    expect(page.error()).toBe('Refresh failed');
+    expect(page.busy()).toBe(false);
+    expect(page.isDemoConnected('metrobank')).toBe(false);
+  });
+  it('opens the CSV picker only from dedicated upload controls', () => {
+    const { fixture } = create();
+    const picker = fixture.nativeElement.querySelector('input[type=file]') as HTMLInputElement;
+    const browse = vi.spyOn(picker, 'click').mockImplementation(() => {});
+    fixture.nativeElement.querySelector('.format-card button').click();
+    fixture.nativeElement.querySelector('.drop-zone').click();
+    expect(browse).toHaveBeenCalledTimes(2);
+    expect(api.connect).not.toHaveBeenCalled();
+    expect(api.confirm).not.toHaveBeenCalled();
+  });
+  it('accepts a dropped statement through the existing validation flow without importing it', () => {
+    const { page } = create();
+    const file = new File(
+      ['Date,Description,Amount\n2026-10-01,Fictional Food,-12.34'],
+      'fictional.csv',
+    );
+    const event = {
+      preventDefault: vi.fn(),
+      dataTransfer: { files: [file] },
+    } as unknown as DragEvent;
+    page.dragOver(event);
+    expect(page.dragging()).toBe(true);
+    page.dropFile(event);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(page.dragging()).toBe(false);
+    expect(page.file).toBe(file);
+    expect(api.columns).toHaveBeenCalledWith(file);
+    expect(page.headers()).toEqual(['Date', 'Description', 'Amount']);
+    expect(api.preview).not.toHaveBeenCalled();
+    expect(api.confirm).not.toHaveBeenCalled();
+  });
+  it('rejects multiple dropped files and prevents replacement during work or review', () => {
+    const { page } = create();
+    const file = new File(['fictional'], 'fictional.csv');
+    const event = (files: File[]) =>
+      ({ preventDefault: vi.fn(), dataTransfer: { files } }) as unknown as DragEvent;
+    page.dropFile(event([file, file]));
+    expect(page.error()).toContain('one CSV statement');
+    expect(api.columns).not.toHaveBeenCalled();
+    page.busy.set(true);
+    page.dropFile(event([file]));
+    expect(api.columns).not.toHaveBeenCalled();
+    page.busy.set(false);
+    review(page);
+    page.dropFile(event([file]));
+    expect(api.columns).not.toHaveBeenCalled();
+    expect(page.preview()?.id).toBe('test-preview');
   });
 });
