@@ -132,6 +132,7 @@ class MockImportIntegrationTests extends JwtTestSupport {
         if (token != null) request.header("Authorization", "Bearer " + token);
         if (body != null) request.header("Content-Type", "application/json");
         try (var http = HttpClient.newHttpClient()) {
+            if (token == null) core_api.CsrfTestSupport.protect(http, "http://127.0.0.1:" + port, request);
             return http.send(request.POST(body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
         }
     }

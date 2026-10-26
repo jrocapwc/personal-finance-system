@@ -1,10 +1,15 @@
 # Personal Finance Management System
 
+Milestone 8E.1 adds secure HttpOnly cookie authentication and browser session restoration.
+See [the current authentication design, configuration and verification](docs/milestone-8e1-authentication.md).
+The older milestone reports below describe their original behavior. Browser login now returns a safe profile,
+and browser mutations require CSRF tokens.
+
 Milestone 9 stabilizes the completed backend: Spring Boot + H2, FastAPI insights/chat,
 MongoDB conversation history, and the local Node mock transaction provider.
 
 See [the verification report, coverage matrix, troubleshooting, and repeatable Bruno E2E sequence](docs/milestone-9.md).
-No frontend, Docker, AWS, payment processing, or real banking connectivity is included.
+The Milestone 9 backend report excludes frontend, Docker, AWS, payment processing, and real banking connectivity.
 
 ## Prerequisites
 
@@ -120,7 +125,8 @@ V1?V5 migrations. Do not reset the database, edit applied migrations, or enable 
 
 ## Endpoint overview
 
-Spring defaults to port 8080. Its application API uses `/api/v1` and existing bearer JWTs.
+Spring defaults to port 8080. Its application API uses `/api/v1`, HttpOnly browser cookies and header-only Bearer compatibility.
+Use the explicit `local` profile for plain-HTTP Angular development; production cookies require HTTPS.
 Public endpoints are registration, login, actuator health, and Swagger documentation.
 
 | Module | Methods and paths |

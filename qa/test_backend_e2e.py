@@ -16,7 +16,8 @@ import subprocess
 import sys
 import time
 from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
+from urllib.request import Request, urlopen, build_opener, HTTPCookieProcessor
+from http.cookiejar import CookieJar
 from uuid import uuid4
 
 import pytest
@@ -31,18 +32,33 @@ def port():
         return sock.getsockname()[1]
 
 
-def call(base, path, method="GET", body=None, token=None, headers=None, expected=200):
+class BrowserSession:
+    """Real cookie jar; credentials are never returned to the application contract."""
+    def __init__(self):
+        self.cookies = CookieJar()
+        self.opener = build_opener(HTTPCookieProcessor(self.cookies))
+
+
+def call(base, path, method="GET", body=None, token=None, headers=None, expected=200, csrf=True):
     request_headers = {"Content-Type": "application/json", **(headers or {})}
-    if token:
+    browser = token if isinstance(token, BrowserSession) else None
+    # Give unauthenticated mutation tests valid CSRF so they exercise authentication.
+    if csrf and method not in ("GET", "HEAD", "OPTIONS") and not token:
+        browser = BrowserSession()
+    if browser and csrf and method not in ("GET", "HEAD", "OPTIONS"):
+        with browser.opener.open(Request(base + "/api/v1/auth/csrf"), timeout=20) as bootstrap:
+            assert bootstrap.status == 200
+        xsrf = next(cookie.value for cookie in browser.cookies if cookie.name == "XSRF-TOKEN")
+        request_headers["X-XSRF-TOKEN"] = xsrf
+    elif token and not browser:
         request_headers["Authorization"] = "Bearer " + token
     payload = None if body is None else json.dumps(body).encode()
     request = Request(base + path, data=payload, headers=request_headers, method=method)
     try:
-        response = urlopen(request, timeout=20)
+        response = (browser.opener.open if browser else urlopen)(request, timeout=20)
     except HTTPError as error:
         response = error
     with response:
-        # On failure report only method/path/status; never dump tokens or response financial data.
         assert response.status == expected, f"{method} {path}: HTTP {response.status}, expected {expected}"
         data = response.read()
         return json.loads(data, parse_float=Decimal) if data else None
@@ -81,7 +97,7 @@ def backend(tmp_path_factory):
         "INTEGRATION_INTERNAL_API_KEY": integration_key, "PORT": str(node_port),
         "AI_INTERNAL_API_KEY": ai_key, "AI_SERVICE_BASE_URL": f"http://127.0.0.1:{ai_port}",
         "AI_SERVICE_READ_TIMEOUT": "10s", "INTEGRATION_SERVICE_BASE_URL": f"http://127.0.0.1:{node_port}",
-        "JWT_SECRET_BASE64": base64.b64encode(signing_bytes).decode(), "SPRING_PROFILES_ACTIVE": "qa",
+        "JWT_SECRET_BASE64": base64.b64encode(signing_bytes).decode(), "SPRING_PROFILES_ACTIVE": "qa,local",
         "SPRING_DATASOURCE_URL": "jdbc:h2:mem:qa_" + uuid4().hex + ";DB_CLOSE_DELAY=-1",
         "SPRING_DATASOURCE_USERNAME": "sa", "SPRING_DATASOURCE_PASSWORD": "",
         "SPRING_DATASOURCE_DRIVER_CLASS_NAME": "org.h2.Driver", "SPRING_H2_CONSOLE_ENABLED": "false",
@@ -126,12 +142,14 @@ def backend(tmp_path_factory):
 
 def register(backend):
     email, password = f"qa-{uuid4().hex}@example.test", secrets.token_urlsafe(18)
-    profile = call(backend["core"], "/api/v1/auth/register", "POST", {"name": "Fictional QA User", "email": email, "password": password}, expected=201)
+    browser = BrowserSession()
+    profile = call(backend["core"], "/api/v1/auth/register", "POST", {"name": "Fictional QA User", "email": email, "password": password}, token=browser, expected=201)
     assert "password" not in profile and "passwordHash" not in profile
-    login = call(backend["core"], "/api/v1/auth/login", "POST", {"email": email, "password": password})
-    call(backend["core"], "/api/v1/auth/login", "POST", {"email": email, "password": password + "wrong"}, expected=401)
-    assert login["tokenType"] == "Bearer" and login["expiresIn"] == 3600
-    return login["accessToken"]
+    login = call(backend["core"], "/api/v1/auth/login", "POST", {"email": email, "password": password}, token=browser)
+    call(backend["core"], "/api/v1/auth/login", "POST", {"email": email, "password": password + "wrong"}, token=browser, expected=401)
+    assert "accessToken" not in login and login["expiresIn"] == 3600
+    assert call(backend["core"], "/api/v1/auth/session", token=browser)["user"] == login["user"]
+    return browser
 
 
 def test_complete_backend_workflow(backend):
@@ -230,7 +248,7 @@ def test_complete_backend_workflow(backend):
     for path, method in [("/api/v1/dashboard?month=10&year=2026", "GET"), (imports, "POST"), (base, "GET")]:
         call(core, path, method, expected=401)
         call(core, path, method, token="invalid.jwt", expected=401)
-    header, payload, _ = a.split(".")
+    header, payload, _ = next(cookie.value for cookie in a.cookies if cookie.name == "finance_session").split(".")
     claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
     claims.update(iat=int(time.time()) - 120, nbf=int(time.time()) - 120, exp=int(time.time()) - 60)
     encode = lambda value: base64.urlsafe_b64encode(value).decode().rstrip("=")
@@ -244,3 +262,14 @@ def test_complete_backend_workflow(backend):
     stop(backend["node_process"])
     assert call(core, imports, "POST", token=a, expected=503)["code"] == "INTEGRATION_UNAVAILABLE"
     assert dashboard()["summary"] == summary
+
+
+def test_cookie_logout_and_csrf(backend):
+    core = backend["core"]
+    browser = register(backend)
+    call(core, "/api/v1/categories", "POST", {"name": "Blocked CSRF", "type": "EXPENSE"}, token=browser, csrf=False, expected=403)
+    call(core, "/api/v1/auth/logout", "POST", {}, token=browser, csrf=False, expected=403)
+    call(core, "/api/v1/auth/logout", "POST", {}, token=browser, expected=204)
+    assert all(cookie.name != "finance_session" for cookie in browser.cookies)
+    call(core, "/api/v1/auth/session", token=browser, expected=401)
+    call(core, "/api/v1/chat/conversations", token=browser, expected=401)

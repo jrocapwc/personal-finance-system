@@ -84,9 +84,9 @@ class AuthIntegrationTests extends JwtTestSupport {
         assertThat(register(email).statusCode()).isEqualTo(201);
         var response = login(email.toUpperCase(java.util.Locale.ROOT), PASSWORD);
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(JsonPath.<String>read(response.body(), "$.tokenType")).isEqualTo("Bearer");
+        assertThat(response.body()).doesNotContain("accessToken", "tokenType");
         assertThat(JsonPath.<Integer>read(response.body(), "$.expiresIn")).isEqualTo(3600);
-        String token = JsonPath.read(response.body(), "$.accessToken");
+        String token = core_api.CsrfTestSupport.cookie(response, "__Host-finance_session").split("=", 2)[1];
         var jwt = decoder.decode(token);
         var user = users.findByEmail(email).orElseThrow();
         assertThat(jwt.getSubject()).isEqualTo(user.getId().toString());
@@ -97,7 +97,8 @@ class AuthIntegrationTests extends JwtTestSupport {
         assertThat(JsonPath.<String>read(me.body(), "$.id")).isEqualTo(user.getId().toString());
         assertSafe(response.body(), user.getPasswordHash());
         assertSafe(me.body(), user.getPasswordHash());
-        assertThat(response.headers().allValues("set-cookie")).isEmpty();
+        assertThat(response.headers().allValues("set-cookie")).anySatisfy(cookie ->
+                assertThat(cookie).contains("__Host-finance_session=", "HttpOnly", "Secure", "Path=/", "SameSite=Lax", "Max-Age=3600").doesNotContain("Domain="));
         assertThat(me.headers().allValues("set-cookie")).isEmpty();
         assertThat(me.headers().firstValue("cache-control").orElse("")).contains("no-store");
     }
@@ -158,6 +159,11 @@ class AuthIntegrationTests extends JwtTestSupport {
         String token = signer.encode(JwtEncoderParameters.from(
                 JwsHeader.with(MacAlgorithm.HS256).build(), claims.build())).getTokenValue();
         assertError(request("GET", "/api/v1/users/me", null, token), 401, "UNAUTHORIZED");
+        try (var client = HttpClient.newHttpClient()) {
+            var cookieRequest = HttpRequest.newBuilder(URI.create(baseUrl() + "/api/v1/auth/session"))
+                    .header("Cookie", "__Host-finance_session=" + token).GET().build();
+            assertError(client.send(cookieRequest, HttpResponse.BodyHandlers.ofString()), 401, "UNAUTHORIZED");
+        }
     }
 
     @Test
@@ -165,7 +171,7 @@ class AuthIntegrationTests extends JwtTestSupport {
         String email = newEmail();
         register(email);
         var login = login(email, PASSWORD);
-        String token = JsonPath.read(login.body(), "$.accessToken");
+        String token = core_api.CsrfTestSupport.cookie(login, "__Host-finance_session").split("=", 2)[1];
         users.deleteById(users.findByEmail(email).orElseThrow().getId());
         assertError(request("GET", "/api/v1/users/me", null, token), 401, "UNAUTHORIZED");
     }
@@ -178,14 +184,14 @@ class AuthIntegrationTests extends JwtTestSupport {
             case "name" -> payload.put("name", "   ");
             case "email" -> payload.put("email", "invalid-email");
             case "password" -> payload.put("password", "short");
-            case "unicode-password" -> payload.put("password", "é".repeat(37));
+            case "unicode-password" -> payload.put("password", "Ã©".repeat(37));
             default -> throw new IllegalStateException();
         }
         var response = request("POST", "/api/v1/auth/register", payload, null);
         assertError(response, 400, "VALIDATION_FAILED");
         Map<String, Object> fields = JsonPath.read(response.body(), "$.fieldErrors");
         assertThat(fields).containsKey(field.equals("unicode-password") ? "password" : field);
-        assertThat(response.body()).doesNotContain("short", "invalid-email", "é");
+        assertThat(response.body()).doesNotContain("short", "invalid-email", "Ã©");
     }
 
     @ParameterizedTest
@@ -204,7 +210,7 @@ class AuthIntegrationTests extends JwtTestSupport {
     @Test
     void malformedJsonReturnsConsistentBadRequest() throws Exception {
         try (var client = HttpClient.newHttpClient()) {
-            var request = HttpRequest.newBuilder(URI.create(baseUrl() + "/api/v1/auth/register"))
+            var request = core_api.CsrfTestSupport.protect(client, baseUrl(), HttpRequest.newBuilder(URI.create(baseUrl() + "/api/v1/auth/register")))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString("{"))
                     .build();
@@ -237,6 +243,7 @@ class AuthIntegrationTests extends JwtTestSupport {
     private HttpResponse<String> request(String method, String path, Object body, String token) throws Exception {
         try (var client = HttpClient.newHttpClient()) {
             var builder = HttpRequest.newBuilder(URI.create(baseUrl() + path)).timeout(Duration.ofSeconds(20));
+            if (!method.equals("GET") && !method.equals("HEAD")) core_api.CsrfTestSupport.protect(client, baseUrl(), builder);
             if (token != null) {
                 builder.header("Authorization", "Bearer " + token);
             }

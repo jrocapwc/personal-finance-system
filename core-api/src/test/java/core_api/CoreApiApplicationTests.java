@@ -57,7 +57,7 @@ class CoreApiApplicationTests extends JwtTestSupport {
         var response = get("/v3/api-docs");
         assertThat(response.statusCode()).isEqualTo(200);
         java.util.Map<String, Object> paths = JsonPath.read(response.body(), "$.paths");
-        assertThat(paths).containsOnlyKeys("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/users/me",
+        assertThat(paths).containsOnlyKeys("/api/v1/auth/csrf", "/api/v1/auth/session", "/api/v1/auth/logout", "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/users/me",
                 "/api/v1/categories", "/api/v1/categories/{id}",
                 "/api/v1/transactions", "/api/v1/transactions/{id}",
                 "/api/v1/budgets", "/api/v1/budgets/{id}", "/api/v1/dashboard", "/api/v1/insights", "/api/v1/chat/messages",

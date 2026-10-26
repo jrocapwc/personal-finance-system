@@ -42,6 +42,7 @@ describe('Authentication forms', () => {
     page.form.setValue(testCredentials);
     page.submit();
     expect(page.loading()).toBe(true);
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     expect(TestBed.inject(AuthService).currentUser()).toEqual(testUser);
     expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/dashboard');
@@ -53,6 +54,7 @@ describe('Authentication forms', () => {
     const page = fixture.componentInstance;
     page.form.setValue(testCredentials);
     page.submit();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http
       .expectOne('/api/v1/auth/login')
       .flush({ message: 'sensitive detail' }, { status: 401, statusText: 'Unauthorized' });
@@ -112,6 +114,7 @@ describe('Authentication forms', () => {
     const page = registration();
     page.submit();
     page.submit();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     const request = http.expectOne('/api/v1/auth/register');
     expect(request.request.body).toEqual({ name: testUser.name, ...testCredentials });
     request.flush(testUser, { status: 201, statusText: 'Created' });
@@ -124,6 +127,7 @@ describe('Authentication forms', () => {
   it('renders a helpful duplicate email error', () => {
     const page = registration();
     page.submit();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/register').flush({}, { status: 409, statusText: 'Conflict' });
     expect(page.error()).toContain('already exists');
     expect(page.loading()).toBe(false);
@@ -131,10 +135,12 @@ describe('Authentication forms', () => {
   it('handles network failures and allows retry', () => {
     const page = registration();
     page.submit();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/register').error(new ProgressEvent('error'));
     expect(page.error()).toContain('unavailable');
     expect(page.loading()).toBe(false);
     page.submit();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/register').flush(testUser);
   });
 });

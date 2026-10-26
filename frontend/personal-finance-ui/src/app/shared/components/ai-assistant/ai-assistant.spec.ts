@@ -66,9 +66,11 @@ describe('AI Assistant authenticated conversations', () => {
       ],
     });
     http = TestBed.inject(HttpTestingController);
+    document.cookie = 'XSRF-TOKEN=test-csrf; Path=/';
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     auth = TestBed.inject(AuthService);
     auth.login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     fixture = TestBed.createComponent(AiAssistant);
     chat = fixture.componentInstance;
@@ -112,7 +114,7 @@ describe('AI Assistant authenticated conversations', () => {
       chat.send();
       expect(chat.sending()).toBe(true);
       const creation = http.expectOne(base);
-      expect(creation.request.headers.get('Authorization')).toBe('Bearer test-token-only');
+      expect(creation.request.headers.get('Authorization')).toBeNull();
       expect(creation.request.body).toEqual({
         mode,
         title: 'How can I save?',
@@ -288,6 +290,8 @@ describe('AI Assistant authenticated conversations', () => {
     chat.loadConversations();
     const list = http.expectOne(`${base}?page=0&size=20`);
     auth.logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(request.cancelled).toBe(true);
     expect(chat.draft()).toBe('');
     await fixture.whenStable();
@@ -298,6 +302,7 @@ describe('AI Assistant authenticated conversations', () => {
     expect(chat.selected()).toBeNull();
     expect(chat.draft()).toBe('');
     auth.login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http
       .expectOne('/api/v1/auth/login')
       .flush({ ...testLogin, user: { ...testLogin.user, id: 'another-user' } });
@@ -317,7 +322,10 @@ describe('AI Assistant authenticated conversations', () => {
   it('clears private state across same-user relogin before a render occurs', () => {
     beginSend();
     auth.logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     auth.login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     expect(chat.messages()).toEqual([]);
     expect(chat.selected()).toBeNull();

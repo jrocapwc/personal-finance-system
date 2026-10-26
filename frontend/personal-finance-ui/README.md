@@ -1,5 +1,15 @@
 # FinanceAI Angular frontend
 
+## Current authentication: Milestone 8E.1
+
+Authentication now uses a server-issued HttpOnly cookie. Refresh and direct navigation restore the
+profile through `/api/v1/auth/session` before protected screens render. Login, registration and logout
+bootstrap CSRF; Angular supplies `X-XSRF-TOKEN` automatically for own-origin mutations.
+No JWT is read or stored by Angular. Use `http://localhost:4200`, the existing `/api` proxy, and Spring
+with the `local` profile for HTTP development. Production requires HTTPS and a same-origin `/api` proxy.
+See [the design, checks and manual checklist](../../docs/milestone-8e1-authentication.md).
+The earlier milestone records below describe their original behavior and verification.
+
 ## Milestone 8C.5 - Finance management CRUD
 
 The actual workspace is `frontend/personal-finance-ui` (the directory containing `angular.json`).

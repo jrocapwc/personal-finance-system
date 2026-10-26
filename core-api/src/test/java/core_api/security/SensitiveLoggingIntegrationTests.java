@@ -51,7 +51,7 @@ class SensitiveLoggingIntegrationTests extends JwtTestSupport {
         String password = "Fictional-test-password-123!";
         String body = "{\"name\":\"Fictional QA\",\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
         try (var http = HttpClient.newHttpClient(); var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/auth/register"))
+            var request = core_api.CsrfTestSupport.protect(http, "http://127.0.0.1:" + port, HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/auth/register")))
                     .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
             var first = executor.submit(() -> http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
             var second = executor.submit(() -> http.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());

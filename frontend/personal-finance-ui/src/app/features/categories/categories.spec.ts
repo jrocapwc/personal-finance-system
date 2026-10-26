@@ -18,6 +18,7 @@ describe('Categories management', () => {
     http = TestBed.inject(HttpTestingController);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     fixture = TestBed.createComponent(Categories);
     page = fixture.componentInstance;
@@ -136,6 +137,8 @@ describe('Categories management', () => {
     page.save();
     const request = http.expectOne('/api/v1/categories');
     TestBed.inject(AuthService).logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(page.resource.data()).toBeNull();
     TestBed.tick();
     expect(request.cancelled).toBe(true);

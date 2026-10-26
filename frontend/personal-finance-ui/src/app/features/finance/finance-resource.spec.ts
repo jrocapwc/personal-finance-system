@@ -27,6 +27,7 @@ describe('Session-scoped finance resources', () => {
   });
   function login() {
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush({ ...testLogin, user: { ...testLogin.user } });
   }
   function resource() {
@@ -61,6 +62,8 @@ describe('Session-scoped finance resources', () => {
     const { state, requests } = resource();
     requests[0].next(['private']);
     TestBed.inject(AuthService).logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(state.data()).toBeNull();
     TestBed.tick();
     expect(state.data()).toBeNull();
@@ -69,6 +72,8 @@ describe('Session-scoped finance resources', () => {
     login();
     const { state, requests } = resource();
     TestBed.inject(AuthService).logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     requests[0].next(['private']);
     expect(state.data()).toBeNull();
     TestBed.tick();

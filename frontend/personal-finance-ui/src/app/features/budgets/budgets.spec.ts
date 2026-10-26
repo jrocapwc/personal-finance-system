@@ -18,6 +18,7 @@ describe('Budget management', () => {
     http = TestBed.inject(HttpTestingController);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     fixture = TestBed.createComponent(Budgets);
     page = fixture.componentInstance;
@@ -144,6 +145,8 @@ describe('Budget management', () => {
   it('clears all finance data and dialogs after logout', () => {
     fill();
     TestBed.inject(AuthService).logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(page.resource.data()).toBeNull();
     TestBed.tick();
     expect(page.form.controls.monthlyLimit.value).toBe('');

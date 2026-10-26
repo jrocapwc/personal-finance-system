@@ -78,6 +78,9 @@ class ConversationIntegrationTests extends JwtTestSupport {
     private HttpResponse<String> request(String method, String path, String body, String token) throws Exception {
         var builder = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/v1/chat/conversations" + path))
                 .header("Content-Type", "application/json");
+        if (token == null && !method.equals("GET")) {
+            try (var csrfClient = HttpClient.newHttpClient()) { core_api.CsrfTestSupport.protect(csrfClient, "http://127.0.0.1:" + port, builder); }
+        }
         if (token != null) builder.header("Authorization", "Bearer " + token);
         return HttpClient.newHttpClient().send(builder.method(method, body == null ? HttpRequest.BodyPublishers.noBody() :
                 HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());

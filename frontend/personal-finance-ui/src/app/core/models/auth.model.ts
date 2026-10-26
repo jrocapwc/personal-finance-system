@@ -18,8 +18,6 @@ export interface RegisterRequest {
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  tokenType: string;
   expiresIn: number;
   user: UserResponse;
 }

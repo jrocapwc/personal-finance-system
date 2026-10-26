@@ -30,6 +30,8 @@ describe('Authentication routes and layouts', () => {
         { provide: CategoryService, useValue: { list: () => of([]) } },
       ],
     });
+    TestBed.inject(AuthService).restoreSession().subscribe();
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/session').flush({}, {status: 401, statusText: 'Unauthorized'});
   });
   afterEach(() => {
     TestBed.inject(HttpTestingController).verify();
@@ -37,6 +39,7 @@ describe('Authentication routes and layouts', () => {
   });
   function login() {
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/csrf').flush(null);
     TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/login').flush(testLogin);
   }
   it('creates the root and applies light/dark theme to the entire outlet', async () => {
@@ -74,7 +77,7 @@ describe('Authentication routes and layouts', () => {
     'redirects unauthenticated %s to login',
     async (url) => {
       const harness = await RouterTestingHarness.create(url);
-      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(TestBed.inject(Router).url.split('?')[0]).toBe('/login');
       expect(harness.routeNativeElement?.querySelector('app-login')).toBeTruthy();
       expect(harness.routeNativeElement?.querySelector('.sidebar')).toBeNull();
       expect(harness.routeNativeElement?.querySelector('app-ai-assistant')).toBeNull();
@@ -121,10 +124,12 @@ describe('Authentication routes and layouts', () => {
       button.textContent?.includes('Logout'),
     )!;
     logout.click();
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/csrf').flush(null);
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/auth/logout').flush(null);
     await harness.fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(TestBed.inject(Router).url.split('?')[0]).toBe('/login');
     await harness.navigateByUrl('/dashboard');
-    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(TestBed.inject(Router).url.split('?')[0]).toBe('/login');
   });
   it.each(['/login', '/register'])(
     'redirects authenticated users from %s to dashboard',

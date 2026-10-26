@@ -55,7 +55,7 @@
       }
     </span>
   </div>
-  <button class="submit" type="submit" [disabled]="loading()">
+  <button class="submit" type="submit" [disabled]="loading() || logoutPending()">
     @if (loading()) {
       <span class="spinner" aria-hidden="true"></span>
     }

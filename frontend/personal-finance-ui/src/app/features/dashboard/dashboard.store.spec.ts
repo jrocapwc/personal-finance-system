@@ -40,6 +40,7 @@ describe('DashboardStore', () => {
   });
   function start() {
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush({ ...testLogin, user: { ...testUser } });
     store = TestBed.inject(DashboardStore);
     store.setPeriod(selected);
@@ -194,6 +195,8 @@ describe('DashboardStore', () => {
     current().flush(populatedDashboard(selected));
     const pending = http.match(() => true);
     TestBed.inject(AuthService).logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(store.data()).toBeNull();
     TestBed.tick();
     expect(pending.every((request) => request.cancelled)).toBe(true);
@@ -203,7 +206,9 @@ describe('DashboardStore', () => {
     start();
     const old = current();
     TestBed.inject(AuthService).logout();
-    old.flush(populatedDashboard(selected));
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
+    expect(old.cancelled).toBe(true);
     expect(store.data()).toBeNull();
     TestBed.tick();
     expect(
@@ -219,6 +224,7 @@ describe('DashboardStore', () => {
     finishHistory();
     TestBed.inject(AuthService).login(testCredentials).subscribe();
     expect(store.data()).toBeNull();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http
       .expectOne('/api/v1/auth/login')
       .flush({ ...testLogin, user: { ...testUser, id: 'another-user' } });

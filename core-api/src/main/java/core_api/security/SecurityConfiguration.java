@@ -47,12 +47,30 @@ public class SecurityConfiguration {
     }
 
     @Bean
+    org.springframework.security.web.csrf.CookieCsrfTokenRepository csrfRepository(BrowserCredentials cookies) {
+        return cookies.csrfRepository();
+    }
+
+    @Bean
     @Order(2)
     SecurityFilterChain applicationSecurity(HttpSecurity http, SecurityErrorHandler errors,
-                                           UserRepository users) throws Exception {
+                                           UserRepository users, BrowserCredentials cookies,
+                                           org.springframework.security.web.csrf.CookieCsrfTokenRepository csrfRepository) throws Exception {
         return http
-                // This chain accepts only Authorization headers, never cookie-based authentication.
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.csrfTokenRepository(csrfRepository)
+                        .csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler())
+                        // Resource Server otherwise adds an automatic CSRF exemption for
+                        // every resolved bearer, including cookie credentials. Replace
+                        // the final filter matcher with the explicit mechanism policy.
+                        .withObjectPostProcessor(new org.springframework.security.config.ObjectPostProcessor<org.springframework.security.web.csrf.CsrfFilter>() {
+                            @Override
+                            public <O extends org.springframework.security.web.csrf.CsrfFilter> O postProcess(O filter) {
+                                filter.setRequireCsrfProtectionMatcher(request ->
+                                        org.springframework.security.web.csrf.CsrfFilter.DEFAULT_CSRF_MATCHER.matches(request)
+                                                && !cookies.headerOnly(request));
+                                return filter;
+                            }
+                        }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .requestCache(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -60,7 +78,8 @@ public class SecurityConfiguration {
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**",
                                 "/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
@@ -69,6 +88,7 @@ public class SecurityConfiguration {
                         .authenticationEntryPoint(errors::unauthorized)
                         .accessDeniedHandler(errors::forbidden))
                 .oauth2ResourceServer(resource -> resource
+                        .bearerTokenResolver(cookies::resolve)
                         .authenticationEntryPoint(errors::unauthorized)
                         .accessDeniedHandler(errors::forbidden)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(token -> {

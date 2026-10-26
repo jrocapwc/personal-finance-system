@@ -21,6 +21,7 @@ describe('Finance API services', () => {
     });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
   });
   afterEach(() => http.verify());
@@ -33,7 +34,7 @@ describe('Finance API services', () => {
     const request = http.expectOne('/api/v1/dashboard?month=1&year=2026');
     expect(request.request.method).toBe('GET');
     expect(request.request.params.keys()).toEqual(['month', 'year']);
-    expect(request.request.headers.get('Authorization')).toBe('Bearer test-token-only');
+    expect(request.request.headers.get('Authorization')).toBeNull();
     expect(request.request.transferCache).toBe(false);
     request.flush(data);
     expect(response).toEqual(data);
@@ -45,7 +46,7 @@ describe('Finance API services', () => {
     expect(request.request.body).toBeNull();
     expect(request.request.params.keys()).toEqual([]);
     expect(request.request.transferCache).toBe(false);
-    expect(request.request.headers.get('Authorization')).toBe('Bearer test-token-only');
+    expect(request.request.headers.get('Authorization')).toBeNull();
     request.flush([]);
   });
   it('propagates API errors for the dashboard to handle', () => {

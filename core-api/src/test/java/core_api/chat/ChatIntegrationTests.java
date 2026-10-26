@@ -236,6 +236,7 @@ class ChatIntegrationTests extends JwtTestSupport {
             var request = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/chat/messages"))
                     .timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body));
+            if (token == null) core_api.CsrfTestSupport.protect(client, "http://localhost:" + port, request);
             if (token != null) { request.header("Authorization", "Bearer " + token); }
             return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
         }

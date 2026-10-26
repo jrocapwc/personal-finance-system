@@ -23,6 +23,7 @@ describe('Transactions management', () => {
     http = TestBed.inject(HttpTestingController);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     fixture = TestBed.createComponent(Transactions);
     page = fixture.componentInstance;
@@ -224,6 +225,8 @@ describe('Transactions management', () => {
     page.save();
     const pending = http.expectOne('/api/v1/transactions');
     TestBed.inject(AuthService).logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(page.resource.data()).toBeNull();
     expect(page.categoryResource.data()).toBeNull();
     TestBed.tick();

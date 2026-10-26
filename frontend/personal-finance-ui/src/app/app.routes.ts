@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
+  { path: 'session-error', loadComponent: () => import('./features/auth/session-error').then(m => m.SessionError) },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   {
     path: '',

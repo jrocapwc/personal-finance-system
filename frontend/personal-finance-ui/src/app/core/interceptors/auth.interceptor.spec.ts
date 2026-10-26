@@ -24,6 +24,7 @@ describe('authInterceptor', () => {
     auth = TestBed.inject(AuthService);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     auth.login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     const request = http.expectOne('/api/v1/auth/login');
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush(testLogin);
@@ -33,11 +34,11 @@ describe('authInterceptor', () => {
     vi.useRealTimers();
   });
   it.each(['/api/v1/transactions', '/api/v1/budgets?month=1'])(
-    'attaches bearer to own API: %s',
+    'uses cookies without an Authorization header for own API: %s',
     (url) => {
       client.get(url).subscribe();
       const request = http.expectOne(url);
-      expect(request.request.headers.get('Authorization')).toBe('Bearer test-token-only');
+      expect(request.request.headers.get('Authorization')).toBeNull();
       request.flush({});
     },
   );
@@ -45,7 +46,7 @@ describe('authInterceptor', () => {
     const url = new URL('/api/v1/transactions', TestBed.inject(DOCUMENT).baseURI).href;
     client.get(url).subscribe();
     const request = http.expectOne(url);
-    expect(request.request.headers.has('Authorization')).toBe(true);
+    expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush({});
   });
   it.each([
@@ -62,14 +63,16 @@ describe('authInterceptor', () => {
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush({});
   });
-  it('omits tokens when missing', () => {
+  it('sends no Authorization header when unauthenticated', () => {
     auth.logout();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     client.get('/api/v1/transactions').subscribe();
     const request = http.expectOne('/api/v1/transactions');
     expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush({});
   });
-  it('omits expired tokens and clears the user', () => {
+  it('clears expired session state before a request', () => {
     vi.useFakeTimers();
     vi.setSystemTime(Date.now() + 3601000);
     client.get('/api/v1/transactions').subscribe();

@@ -7,8 +7,6 @@ export const testUser: UserResponse = {
   updatedAt: '2026-01-01T00:00:00Z',
 };
 export const testLogin: LoginResponse = {
-  accessToken: 'test-token-only',
-  tokenType: 'Bearer',
   expiresIn: 3600,
   user: testUser,
 };

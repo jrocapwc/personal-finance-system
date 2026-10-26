@@ -46,7 +46,7 @@ public class JwtConfiguration {
     @Bean
     NimbusJwtDecoder jwtDecoder(SecretKey jwtSigningKey,
                                @Value("${app.jwt.issuer}") String issuer,
-                               @Value("${app.jwt.audience}") String audience) {
+                               @Value("${app.jwt.audience}") String audience, Clock clock) {
         var decoder = NimbusJwtDecoder.withSecretKey(jwtSigningKey).macAlgorithm(MacAlgorithm.HS256).build();
         OAuth2TokenValidator<Jwt> requiredClaims = jwt -> {
             boolean valid = jwt.getIssuedAt() != null && jwt.getExpiresAt() != null
@@ -55,8 +55,10 @@ public class JwtConfiguration {
             return valid ? OAuth2TokenValidatorResult.success()
                     : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Invalid token claims", null));
         };
+        var timestamps = new JwtTimestampValidator(Duration.ZERO);
+        timestamps.setClock(clock);
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                new JwtTimestampValidator(Duration.ZERO), new JwtIssuerValidator(issuer), requiredClaims));
+                timestamps, new JwtIssuerValidator(issuer), requiredClaims));
         return decoder;
     }
 

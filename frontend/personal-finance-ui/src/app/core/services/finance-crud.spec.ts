@@ -28,7 +28,10 @@ describe('Finance CRUD HTTP contracts', () => {
       ],
     });
     http = TestBed.inject(HttpTestingController);
+    // HttpTestingController does not apply the server's readable Set-Cookie.
+    document.cookie = 'XSRF-TOKEN=test-csrf; Path=/';
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
   });
   afterEach(() => http.verify());
@@ -51,7 +54,7 @@ describe('Finance CRUD HTTP contracts', () => {
     const request = http.expectOne(url);
     expect(request.request.method).toBe(method);
     expect(request.request.body).toEqual(body);
-    expect(request.request.headers.get('Authorization')).toBe('Bearer test-token-only');
+    expect(request.request.headers.get('Authorization')).toBeNull();
     expect(request.request.params.has('userId')).toBe(false);
     request.flush(
       response as object | null,
@@ -136,7 +139,7 @@ describe('Finance CRUD HTTP contracts', () => {
     expect(request.request.params.get('size')).toBe('100');
     expect(request.request.params.get('sort')).toBe('amount');
     expect(request.request.params.get('direction')).toBe('ASC');
-    expect(request.request.headers.has('Authorization')).toBe(true);
+    expect(request.request.headers.has('Authorization')).toBe(false);
     request.flush(financePage());
   });
   it.each(['create', 'update'] as const)(
@@ -200,8 +203,9 @@ describe('Finance CRUD HTTP contracts', () => {
     TestBed.inject(CategoryService).create(categoryBody).subscribe();
     const pending = http.expectOne('/api/v1/categories');
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush({ ...testLogin, user: { ...testLogin.user } });
-    pending.flush(financeCategories[0]);
+    expect(pending.cancelled).toBe(true);
     expect(changes.revision()).toBe(version);
   });
   it('rejects unsafe identifiers before making a request', () => {

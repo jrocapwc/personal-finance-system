@@ -256,6 +256,7 @@ class CategoryIntegrationTests extends JwtTestSupport {
         try (var client = HttpClient.newHttpClient()) {
             var builder = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/v1/categories" + suffix))
                     .timeout(Duration.ofSeconds(20));
+            if (token == null && !method.equals("GET")) core_api.CsrfTestSupport.protect(client, "http://localhost:" + port, builder);
             if (token != null) { builder.header("Authorization", "Bearer " + token); }
             if (body != null) {
                 builder.header("Content-Type", "application/json")

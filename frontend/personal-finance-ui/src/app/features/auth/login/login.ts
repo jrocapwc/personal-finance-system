@@ -17,6 +17,7 @@ import { AuthService } from '../../../core/services/auth';
 export class Login {
   private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
+  readonly logoutPending = this.auth.logoutPending;
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   readonly loading = signal(false);
@@ -26,13 +27,14 @@ export class Login {
     email: ['', [Validators.required, Validators.email, Validators.maxLength(254)]],
     password: ['', [Validators.required]],
   });
+  private readonly returnUrl = inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl');
   readonly registered = inject(ActivatedRoute).snapshot.queryParamMap.get('registered') === 'true';
   invalid(field: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[field];
     return control.touched && control.invalid;
   }
   submit(): void {
-    if (this.loading()) return;
+    if (this.loading() || this.logoutPending()) return;
     this.form.markAllAsTouched();
     if (this.form.invalid) return;
     this.error.set('');
@@ -47,7 +49,7 @@ export class Login {
       .subscribe({
         next: () => {
           this.form.reset();
-          if (this.auth.isAuthenticated()) void this.router.navigateByUrl('/dashboard');
+          if (this.auth.isAuthenticated()) void this.router.navigateByUrl(this.auth.safeReturnUrl(this.returnUrl));
         },
         error: (error: unknown) => {
           this.error.set(

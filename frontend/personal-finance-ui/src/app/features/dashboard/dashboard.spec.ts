@@ -21,6 +21,7 @@ describe('Live dashboard component', () => {
     http = TestBed.inject(HttpTestingController);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     TestBed.inject(AuthService).login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush(testLogin);
     fixture = TestBed.createComponent(Dashboard);
     page = fixture.componentInstance;

@@ -15,6 +15,7 @@ describe('AuthService', () => {
     auth = TestBed.inject(AuthService);
     http = TestBed.inject(HttpTestingController);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
   });
   afterEach(() => {
     http.verify();
@@ -22,6 +23,7 @@ describe('AuthService', () => {
   });
   function login(expiresIn = 3600) {
     auth.login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     const request = http.expectOne('/api/v1/auth/login');
     expect(request.request.body).toEqual(testCredentials);
     request.flush({ ...testLogin, expiresIn });
@@ -30,10 +32,10 @@ describe('AuthService', () => {
     expect(auth.isAuthenticated()).toBe(false);
     expect(auth.currentUser()).toBeNull();
   });
-  it('stores the token and reactive user only in memory', () => {
+  it('stores only the safe reactive user in memory', () => {
     const local = vi.spyOn(Storage.prototype, 'setItem');
     login();
-    expect(auth.getToken()).toBe(testLogin.accessToken);
+    expect('getToken' in auth).toBe(false);
     expect(auth.currentUser()).toEqual(testUser);
     expect(auth.isAuthenticated()).toBe(true);
     expect(local).not.toHaveBeenCalled();
@@ -43,6 +45,7 @@ describe('AuthService', () => {
     auth
       .register({ name: testUser.name, ...testCredentials, confirmPassword: 'ignored' } as never)
       .subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     const request = http.expectOne('/api/v1/auth/register');
     expect(request.request.body).toEqual({ name: testUser.name, ...testCredentials });
     request.flush(testUser, { status: 201, statusText: 'Created' });
@@ -50,8 +53,9 @@ describe('AuthService', () => {
   });
   it('leaves no session after a failed login', () => {
     auth.login(testCredentials).subscribe({ error: () => {} });
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush({}, { status: 401, statusText: 'Unauthorized' });
-    expect(auth.getToken()).toBeNull();
+    expect(auth.isAuthenticated()).toBe(false);
     expect(auth.currentUser()).toBeNull();
   });
   it('expires the session without requiring another request', () => {
@@ -60,31 +64,39 @@ describe('AuthService', () => {
     vi.advanceTimersByTime(2000);
     expect(auth.currentUser()).toBeNull();
     expect(auth.isAuthenticated()).toBe(false);
-    expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/login');
+    expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(['/login'], { queryParams: { returnUrl: '/dashboard' } });
   });
   it('checks wall clock expiration after a suspended browser resumes', () => {
     vi.useFakeTimers();
     login(2);
     vi.setSystemTime(Date.now() + 3000);
-    expect(auth.getToken()).toBeNull();
+    expect(auth.isAuthenticated()).toBe(false);
     expect(auth.currentUser()).toBeNull();
   });
   it('logout clears state and redirects to login', () => {
     login();
     auth.logout();
-    expect(auth.getToken()).toBeNull();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
+    expect(auth.isAuthenticated()).toBe(false);
     expect(auth.currentUser()).toBeNull();
     expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/login');
   });
-  it('does not restore an in-flight login after logout', () => {
+  it('waits for an in-flight login before clearing its cookie', () => {
     auth.login(testCredentials).subscribe();
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     auth.logout();
+    http.expectNone('/api/v1/auth/logout');
     http.expectOne('/api/v1/auth/login').flush(testLogin);
+    expect(auth.isAuthenticated()).toBe(false);
+    http.expectOne('/api/v1/auth/csrf').flush(null);
+    http.expectOne('/api/v1/auth/logout').flush(null);
     expect(auth.isAuthenticated()).toBe(false);
   });
   it.each([0, -1, NaN])('rejects an invalid lifetime %s', (expiresIn) => {
     let failed = false;
     auth.login(testCredentials).subscribe({ error: () => (failed = true) });
+    http.expectOne('/api/v1/auth/csrf').flush(null);
     http.expectOne('/api/v1/auth/login').flush({ ...testLogin, expiresIn });
     expect(failed).toBe(true);
     expect(auth.isAuthenticated()).toBe(false);

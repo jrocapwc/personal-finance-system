@@ -17,12 +17,6 @@ body:json {
   }
 }
 
-vars:pre-request {
-  baseUrl: http://localhost:8080
-  email: joseph.rocafort@pwc.com
-  password: #Password.com09:)
-}
-
 script:post-response {
   if (res.getStatus() === 200) {
     bru.setVar("accessToken", res.getBody().accessToken);
