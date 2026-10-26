@@ -1,78 +1,153 @@
-import { Component } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-
-interface Summary {
-  label: string;
-  amount: number;
-  kind: 'balance' | 'income' | 'expense' | 'savings';
-  icon: string;
-  movement: string;
-  isUp: boolean;
-}
-
-interface Transaction {
-  date: string;
-  description: string;
-  category: string;
-  icon: string;
-  amount: number;
-}
-
-interface Category {
-  label: string;
-  percent: number;
-  color: string;
-}
-
+import { DashboardStore } from './dashboard.store';
+import { expenseSlices, MONTH_NAMES } from './dashboard.mapper';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, MatCardModule, MatIconModule],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, ReactiveFormsModule, MatCardModule, MatIconModule],
+  providers: [DashboardStore],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.scss'
+  styleUrls: ['./dashboard.scss', './dashboard-controls.scss'],
 })
 export class Dashboard {
-  // Mock financial figures only; replace with Spring Boot API data later.
+  readonly store = inject(DashboardStore);
   readonly currencyCode = 'PHP';
-
-  readonly summaries: Summary[] = [
-    { label: 'Total Balance', amount: 125430.50, kind: 'balance', icon: 'account_balance_wallet', movement: '12% from last month', isUp: true },
-    { label: 'Income', amount: 45200.00, kind: 'income', icon: 'trending_up', movement: '8% from last month', isUp: true },
-    { label: 'Expenses', amount: 28450.75, kind: 'expense', icon: 'shopping_cart', movement: '5% from last month', isUp: false },
-    { label: 'Savings', amount: 16749.25, kind: 'savings', icon: 'savings', movement: '18% from last month', isUp: true }
-  ];
-
-  readonly months = [
-    { name: 'Jan', income: 30000, expenses: 19000 },
-    { name: 'Feb', income: 39000, expenses: 16000 },
-    { name: 'Mar', income: 35500, expenses: 24000 },
-    { name: 'Apr', income: 40000, expenses: 21000 },
-    { name: 'May', income: 47000, expenses: 27000 },
-    { name: 'Jun', income: 55000, expenses: 33000 }
-  ];
-  readonly chartMax = 60000;
-  readonly chartTicks = [60000, 40000, 20000, 0];
-
-  readonly expenses: Category[] = [
-    { label: 'Food', percent: 35, color: '#3b82f6' },
-    { label: 'Transportation', percent: 20, color: '#14b8a6' },
-    { label: 'Shopping', percent: 15, color: '#fbbf24' },
-    { label: 'Bills & Utilities', percent: 15, color: '#f97316' },
-    { label: 'Others', percent: 15, color: '#94a3b8' }
-  ];
-
-  readonly transactions: Transaction[] = [
-    { date: '2026-10-16', description: 'Grocery Shopping', category: 'Food', icon: 'restaurant', amount: -2350 },
-    { date: '2026-10-15', description: 'Salary', category: 'Income', icon: 'payments', amount: 25000 },
-    { date: '2026-10-14', description: 'Electric Bill', category: 'Utilities', icon: 'bolt', amount: -3200 },
-    { date: '2026-10-13', description: 'Taxi Fare', category: 'Transport', icon: 'directions_car', amount: -650 }
-  ];
-
-  readonly budgets = [
-    { label: 'Food', percent: 70, tone: 'teal' },
-    { label: 'Transportation', percent: 45, tone: 'blue' },
-    { label: 'Entertainment', percent: 30, tone: 'yellow' }
-  ];
+  readonly monthNames = MONTH_NAMES;
+  readonly controls = inject(FormBuilder).nonNullable.group({
+    month: [
+      this.store.period().month,
+      [Validators.required, Validators.min(1), Validators.max(12)],
+    ],
+    year: [
+      this.store.period().year,
+      [
+        Validators.required,
+        Validators.min(2000),
+        Validators.max(2100),
+        Validators.pattern(/^\d{4}$/),
+      ],
+    ],
+  });
+  readonly summaries = computed(() => {
+    const summary = this.store.data()?.summary;
+    return summary
+      ? [
+          {
+            label: 'Monthly Income',
+            amount: summary.totalIncome,
+            kind: 'income',
+            icon: 'trending_up',
+            rate: false,
+          },
+          {
+            label: 'Monthly Expenses',
+            amount: summary.totalExpenses,
+            kind: 'expense',
+            icon: 'shopping_cart',
+            rate: false,
+          },
+          {
+            label: 'Net Savings',
+            amount: summary.netSavings,
+            kind: 'balance',
+            icon: 'savings',
+            rate: false,
+          },
+          {
+            label: 'Savings Rate',
+            amount: summary.savingsRate,
+            kind: 'savings',
+            icon: 'percent',
+            rate: true,
+          },
+        ]
+      : [];
+  });
+  readonly expenses = computed(() => expenseSlices(this.store.data()?.expensesByCategory ?? []));
+  readonly donutBackground = computed(() =>
+    this.expenses().length
+      ? `conic-gradient(${this.expenses()
+          .map((row) => `${row.color} ${row.start}% ${row.end}%`)
+          .join(', ')})`
+      : 'var(--track-bg)',
+  );
+  readonly donutDescription = computed(
+    () =>
+      this.expenses()
+        .map((row) => `${row.categoryName}: ${row.percent}%`)
+        .join(', ') || 'No expenses in this reporting period',
+  );
+  readonly historyLoading = computed(() =>
+    this.store.state().history.some((month) => month.status === 'loading'),
+  );
+  readonly historyIncomplete = computed(() =>
+    this.store
+      .state()
+      .history.some((month) => month.status === 'error' || month.status === 'unsupported'),
+  );
+  readonly chartMax = computed(() => {
+    const values = this.store
+      .state()
+      .history.flatMap((month) =>
+        month.summary ? [month.summary.totalIncome, month.summary.totalExpenses] : [],
+      );
+    const maximum = Math.max(0, ...values);
+    if (!maximum) return 100;
+    const unit = 10 ** Math.floor(Math.log10(maximum));
+    return Math.ceil(maximum / unit) * unit;
+  });
+  readonly chartTicks = computed(() => [
+    this.chartMax(),
+    (this.chartMax() * 2) / 3,
+    this.chartMax() / 3,
+    0,
+  ]);
+  readonly chartDescription = computed(() =>
+    this.store
+      .state()
+      .history.map(
+        (month) =>
+          `${month.label}: ${month.summary ? `income PHP ${month.summary.totalIncome}, expenses PHP ${month.summary.totalExpenses}` : 'unavailable'}`,
+      )
+      .join('; '),
+  );
+  readonly categories = computed(() => {
+    const data = this.store.data();
+    return new Map([
+      ...(data
+        ? [...data.incomeByCategory, ...data.expensesByCategory].map(
+            (row) => [row.categoryId, row.categoryName] as const,
+          )
+        : []),
+      ...this.store.state().categories.map((row) => [row.id, row.name] as const),
+    ]);
+  });
+  readonly transactions = computed(() =>
+    (this.store.data()?.recentTransactions ?? []).map((row) => ({
+      ...row,
+      category: this.categoryName(row.categoryId),
+      signedAmount: row.type === 'EXPENSE' ? -row.amount : row.amount,
+      icon: row.type === 'EXPENSE' ? 'shopping_bag' : 'payments',
+    })),
+  );
+  readonly budgets = computed(() =>
+    (this.store.data()?.budgetUtilization ?? []).map((row) => ({
+      ...row,
+      label: this.categoryName(row.categoryId),
+      width: Math.max(0, Math.min(100, row.percentageUsed)),
+    })),
+  );
+  constructor() {
+    this.controls.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      if (this.controls.valid) this.store.setPeriod(this.controls.getRawValue());
+    });
+  }
+  private categoryName(id: number): string {
+    return this.categories().get(id) ?? `Category #${id} (name unavailable)`;
+  }
 }

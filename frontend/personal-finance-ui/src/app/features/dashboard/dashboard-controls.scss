@@ -1,0 +1,148 @@
+/* Live controls and states inherit the existing Option A theme. */
+.dashboard-controls {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 22px;
+}
+.dashboard-controls > div {
+  display: grid;
+  gap: 6px;
+}
+.dashboard-controls label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.dashboard-controls select,
+.dashboard-controls input {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--surface);
+  padding: 10px;
+  font: inherit;
+  min-height: 42px;
+}
+.dashboard-controls input {
+  width: 110px;
+}
+.action-button {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  min-height: 42px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.dashboard-controls :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.dashboard-notice {
+  padding: 16px;
+  margin: 0 0 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.error-text {
+  color: color-mix(in srgb, var(--negative) 80%, var(--text-primary));
+}
+.loading-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 8px;
+}
+.summary-period,
+.empty-state,
+.chart-notice {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.empty-state {
+  padding: 14px 0;
+  margin: 0;
+}
+.chart-notice {
+  margin: 0 0 12px;
+}
+.panel-heading {
+  flex-wrap: wrap;
+}
+.panel-heading > span {
+  white-space: normal;
+}
+.axis-labels {
+  width: auto;
+  min-width: 36px;
+  max-width: 110px;
+  overflow-wrap: anywhere;
+}
+.month-group > span {
+  text-align: center;
+}
+.bar {
+  min-height: 0;
+}
+.missing-month {
+  color: var(--text-secondary);
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+.budget-row {
+  grid-template-columns: minmax(60px, 0.9fr) 1.5fr auto;
+}
+.budget-name,
+.category-name {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.budget-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.budget-fill.SAFE {
+  background: var(--chart-teal);
+}
+.budget-fill.WARNING {
+  background: var(--chart-yellow);
+}
+.budget-fill.EXCEEDED {
+  background: var(--negative);
+}
+.budget-status.EXCEEDED {
+  color: var(--negative);
+}
+.budget-status {
+  font-weight: 600;
+}
+@media (max-width: 420px) {
+  .dashboard-controls {
+    gap: 10px;
+  }
+  .dashboard-controls select {
+    max-width: 160px;
+  }
+}

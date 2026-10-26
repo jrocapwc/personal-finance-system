@@ -7,7 +7,7 @@
   h1 { margin: 0; font-size: 27px; font-weight: 750; color: var(--text-primary); }
   p { margin: 7px 0 0; font-size: 13px; color: var(--text-secondary); }
 }
-.demo-pill { font-size: 11px; color: var(--accent); background: var(--accent-soft); border-radius: 20px; padding: 8px 12px; white-space: nowrap; }
+.period-pill { font-size: 11px; color: var(--accent); background: var(--accent-soft); border-radius: 20px; padding: 8px 12px; white-space: nowrap; }
 
 .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
 .summary-card {
@@ -68,8 +68,7 @@
 .dot.blue { background: var(--chart-blue); }
 
 .breakdown-content { min-height: 232px; display: flex; align-items: center; justify-content: center; gap: 25px; }
-.donut { display: grid; place-items: center; width: 188px; height: 188px; flex-shrink: 0; border-radius: 50%; background: conic-gradient(
-  #3b82f6 0% 35%, #14b8a6 35% 55%, #fbbf24 55% 70%, #f97316 70% 85%, #94a3b8 85% 100%);
+.donut { display: grid; place-items: center; width: 188px; height: 188px; flex-shrink: 0; border-radius: 50%; background: var(--track-bg);
 }
 .donut-hole { width: 119px; height: 119px; border-radius: 50%; background: var(--surface); display: flex; justify-content: center; align-items: center; flex-direction: column;
   strong { font-size: 13px; letter-spacing: -.4px; }

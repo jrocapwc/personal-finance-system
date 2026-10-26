@@ -4,6 +4,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
+import { of } from 'rxjs';
+import { DashboardService } from './core/services/dashboard';
+import { CategoryService } from './core/services/category';
+import { emptyDashboard } from './features/dashboard/dashboard.testing';
+import { ReportingPeriod } from './core/models/dashboard.model';
 import { routes } from './app.routes';
 import { AuthService } from './core/services/auth';
 import { ThemeService } from './core/services/theme';
@@ -14,7 +19,16 @@ describe('Authentication routes and layouts', () => {
     localStorage.removeItem('finance-theme');
     TestBed.configureTestingModule({
       imports: [App],
-      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter(routes),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: DashboardService,
+          useValue: { getMonthly: (period: ReportingPeriod) => of(emptyDashboard(period)) },
+        },
+        { provide: CategoryService, useValue: { list: () => of([]) } },
+      ],
     });
   });
   afterEach(() => {
@@ -33,6 +47,22 @@ describe('Authentication routes and layouts', () => {
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.dark-theme')).toBeTruthy();
     expect(localStorage.getItem('finance-theme')).toBe('dark');
+  });
+  it('keeps the live dashboard under the shared light/dark theme wrapper', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    login();
+    await TestBed.inject(Router).navigateByUrl('/dashboard');
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelector('.app-shell app-dashboard .summary-grid'),
+    ).toBeTruthy();
+    TestBed.inject(ThemeService).toggleTheme();
+    await fixture.whenStable();
+    expect(
+      fixture.nativeElement.querySelector('.dark-theme app-dashboard .summary-grid'),
+    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-ai-assistant')).toBeTruthy();
   });
   it('restores the existing theme preference after rendering', async () => {
     localStorage.setItem('finance-theme', 'dark');

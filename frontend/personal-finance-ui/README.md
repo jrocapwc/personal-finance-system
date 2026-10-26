@@ -1,5 +1,152 @@
 # FinanceAI Angular frontend
 
+## Milestone 8C - Live finance dashboard
+
+The Option A dashboard now displays authenticated Spring Boot financial data. It uses only
+`GET /api/v1/dashboard?month={month}&year={year}` and `GET /api/v1/categories`.
+No backend endpoints, authentication implementation, theme service, layout shell or AI Assistant
+source were changed. There are no CRUD pages and no demonstration-data fallback on failures.
+
+### Services, contracts and state
+
+- `DashboardService.getMonthly()` and `CategoryService.list()` are thin, stateless HttpClient
+  wrappers with relative URLs. The existing functional JWT interceptor supplies authorization.
+- TypeScript contracts mirror the Java dashboard/nested summary, category breakdown, daily trend,
+  transaction, budget and category response records. Java BigDecimal fields arrive as JSON numbers;
+  LocalDate values remain date strings and Instant values remain timestamp strings. `ApiError`
+  describes the shared backend error shape. Currency is the existing PHP application convention,
+  since the API does not return a currency field.
+- `DashboardStore` is provided by the dashboard component, not globally. Signals expose the
+  selected period and load state. RxJS `switchMap` cancels superseded period/session requests;
+  explicit session-reference and period checks also reject responses racing before cancellation.
+  Visible finance data clears immediately on a period change or logout/session change. Feature
+  destruction cancels pending requests. There is no persistent finance cache.
+- Monthly and category requests run independently of historical requests. A normal load makes
+  six unique monthly dashboard requests plus one category request, reusing the selected month's
+  response in the six-month chart. Current data renders without waiting for history. Historical
+  failures show N/A rather than zero and do not erase the selected month's successful data.
+- Finance requests are disabled on the server, even if an auth state is supplied in a server test.
+  Both HTTP services also disable Angular transfer caching. Authenticated records are not prerendered.
+
+### Display behavior
+
+- Four cards show Monthly Income, Monthly Expenses, Net Savings and Savings Rate. Monetary values
+  use PHP formatting. A null savings rate displays Unavailable. There is no Total Balance card.
+- The reporting period is explicit. Month/year controls support the backend's 2000-2100 range.
+  Refresh and retry reload data; loading, empty, category-lookup and API-failure states are distinct.
+- The donut uses actual category amounts. Integer-cent/BigInt largest-remainder allocation makes
+  displayed percentages total 100.00%. Valid backend hex colors are used; absent/invalid colors
+  use a safe local palette. Zero expenses produce an empty ring and an explanatory message.
+- Recent transactions come from the selected dashboard response, limited by the backend to five
+  within that month. Category IDs map through the category lookup, with reporting breakdown names
+  as a secondary source. Unknown IDs are explicitly labeled as unavailable. Expense amounts are
+  negated only for presentation. Date-only transactions are formatted using explicit UTC midnight
+  so local timezone conversion cannot move them to the previous calendar day.
+- Budget utilization comes directly from the dashboard response. Actual percentages, remaining
+  amounts and SAFE/WARNING/EXCEEDED statuses are retained. Bar width and ARIA numeric range are
+  clamped to 100%; ARIA value text and visible text retain the real percentage, including overspending.
+- The six-month chart ends at the selected month and handles year rollover. Axis scales, labels,
+  donut stops and accessible descriptions use real response values. Zero-value bars have zero height.
+
+### Verification - October 26, 2026
+
+- `npm test -- --watch=false`: **85 tests passed across 8 files**.
+- `npm run build`: **passed**, including browser/server bundles and three prerendered routes.
+- The existing dashboard component-style warning remains: 6.50 kB against the 4 kB warning
+  budget, below the 8 kB error budget. Budgets were not raised.
+- Headless Chrome verified the live Angular proxy against the existing Spring Boot jar with
+  Java 25, a temporary signing key, an isolated in-memory H2 database and disposable test accounts.
+  No stored finance database was touched. Checks passed for real API totals, decimal/negative
+  values, overspending, exact request count, month/year rollover, historical failure isolation,
+  current-month failure with no fallback, retry, themes, mobile overflow, AI controls, logout,
+  an empty second account and reload requiring login. No browser runtime/hydration errors occurred.
+  Desktop light and mobile dark screenshots were inspected.
+- Tests cover exact authenticated requests, null/zero/negative summaries, category mapping,
+  percentage rounding/colors, dynamic charts, unsupported periods, API failures, cancellation,
+  responses racing period/logout changes, session replacement, SSR suppression, budget progress,
+  calendar dates and shared theme compatibility.
+
+### Limits and prerequisites
+
+- The existing JSON-number contract is retained. Money outside +/-PHP 1,000,000,000,000 or
+  nonfinite numeric values is rejected with an explicit display-range error instead of being
+  presented with potentially incorrect cents. The backend supports a larger decimal range;
+  supporting all of it needs a future lossless numeric transport/parse strategy. No financial
+  arithmetic is substituted for the server's authoritative summaries or budget calculations.
+- Months before January 2000 are marked unavailable without sending invalid requests. A selected
+  period near that boundary therefore has fewer than six supported historical months.
+- Category lookup failure leaves the dashboard usable with available breakdown names or an
+  explicit unknown-category label. Retry reloads the lookup and monthly reports.
+- PHP remains the single display currency. No account balances, currency conversion, refresh-token
+  flow, mutation pages, or AI message-sending integration was added.
+- Run Spring Boot and Angular using the instructions below. The development proxy still targets
+  port 8080. Production still requires a same-origin reverse proxy for `/api/**`.
+
+### Manual verification checklist
+
+1. Start Spring Boot and Angular, sign in, and confirm the reporting month/year.
+2. Compare the four cards, category totals, five recent transactions and budgets with the selected
+   user's `/api/v1/dashboard` response; verify that Total Balance and sample labels are absent.
+3. Choose January and confirm the chart includes the preceding year; change periods rapidly
+   and confirm old results do not flash into the new reporting period.
+4. Check a month with no transactions, one with expenses but zero income, and one with negative
+   savings. Null savings rate must remain Unavailable.
+5. Confirm decimal peso amounts and calendar dates. Donut legend percentages should sum to
+   100.00% when expenses exist. Check a category without a color.
+6. Check SAFE, WARNING and EXCEEDED budgets, including >100% usage and negative remaining money.
+7. Simulate one historical request failure: current-month data must remain visible and the
+   failed month must read N/A. Retry after restoring connectivity.
+8. Stop the backend and refresh: show an API error and Retry, with no fabricated fallback data.
+   Restart it and retry successfully.
+9. Check desktop/mobile layouts, both themes, theme persistence, and AI Assistant open/close
+   plus GENERAL/FINANCE switching.
+10. Log out during a pending load. Sign in as a different user and confirm no previous user's
+    values remain. Reload while signed in and confirm the existing login requirement.
+
+### Files for Milestone 8C
+
+Created (relative to this Angular directory):
+
+```text
+src/app/core/models/api-error.model.ts
+src/app/core/models/category.model.ts
+src/app/core/models/dashboard.model.ts
+src/app/core/services/category.ts
+src/app/core/services/dashboard.ts
+src/app/core/services/finance-api.spec.ts
+src/app/features/dashboard/dashboard-controls.scss
+src/app/features/dashboard/dashboard.mapper.ts
+src/app/features/dashboard/dashboard.mapper.spec.ts
+src/app/features/dashboard/dashboard.store.ts
+src/app/features/dashboard/dashboard.store.spec.ts
+src/app/features/dashboard/dashboard.spec.ts
+src/app/features/dashboard/dashboard.testing.ts
+```
+
+Modified:
+
+```text
+README.md
+src/app/app.spec.ts
+src/app/features/dashboard/dashboard.ts
+src/app/features/dashboard/dashboard.html
+src/app/features/dashboard/dashboard.scss
+```
+
+The pre-existing change to `core-api/bruno/Authentication/03 Login.bru` was left untouched.
+No dependencies were added.
+
+Suggested commit message:
+
+```text
+feat(dashboard): integrate authenticated monthly finance reporting
+```
+
+## Milestone 8B baseline notes
+
+The following records the authentication milestone. The 8C behavior and verification above
+supersede its earlier dashboard demo-data status and test counts.
+
 Milestone 8B adds authentication to the existing Option A dashboard. The actual app directory
 is `frontend/personal-finance-ui`; there is no second nested `personal-finance-ui` folder.
 The Spring Boot and FastAPI source code and the dashboard/AI Assistant components are unchanged.

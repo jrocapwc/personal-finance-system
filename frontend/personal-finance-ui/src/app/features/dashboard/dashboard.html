@@ -1,117 +1,315 @@
-<section class="dashboard" aria-label="Financial dashboard">
+<section
+  class="dashboard"
+  aria-label="Financial dashboard"
+  [attr.aria-busy]="store.state().loading"
+>
   <div class="page-heading">
     <div>
       <h1>Dashboard</h1>
       <p>Welcome back! Here's your financial overview.</p>
     </div>
-    <span class="demo-pill">Sample data · October 2026</span>
+    <span class="period-pill">{{ store.periodLabel() }}</span>
   </div>
 
-  <section class="summary-grid" aria-label="Financial summary">
-    @for (item of summaries; track item.kind) {
-      <mat-card class="summary-card" [class]="item.kind">
-        <mat-card-content>
-          <div class="summary-heading">
-            <div class="summary-icon"><mat-icon>{{ item.icon }}</mat-icon></div>
-            <span>{{ item.label }}</span>
-          </div>
-          <strong class="summary-number">{{ item.amount | currency:currencyCode:'symbol':'1.2-2' }}</strong>
-          <div class="summary-change" [class.change-down]="!item.isUp">
-            <mat-icon>{{ item.isUp ? 'north_east' : 'south_east' }}</mat-icon>
-            {{ item.movement }}
-          </div>
-        </mat-card-content>
-      </mat-card>
+  <div class="dashboard-controls" [formGroup]="controls" role="group" aria-label="Reporting period">
+    <div>
+      <label for="report-month">Month</label
+      ><select id="report-month" formControlName="month">
+        @for (month of monthNames; track $index) {
+          <option [ngValue]="$index + 1">{{ month }}</option>
+        }
+      </select>
+    </div>
+    <div>
+      <label for="report-year">Year</label
+      ><input
+        id="report-year"
+        type="number"
+        formControlName="year"
+        min="2000"
+        max="2100"
+        step="1"
+        aria-describedby="period-error"
+        [attr.aria-invalid]="controls.controls.year.invalid"
+      />
+    </div>
+    <button
+      class="action-button"
+      type="button"
+      (click)="store.refresh()"
+      [disabled]="controls.invalid || store.state().loading"
+    >
+      <mat-icon aria-hidden="true">refresh</mat-icon>Refresh
+    </button>
+    @if (controls.invalid) {
+      <p id="period-error" class="error-text">Choose a year from 2000 to 2100.</p>
     }
-  </section>
+  </div>
 
-  <section class="analytics-grid" aria-label="Financial charts">
-    <mat-card class="dashboard-panel">
-      <mat-card-content>
-        <div class="panel-heading"><h2>Income vs Expenses</h2><span>Last 6 months</span></div>
-        <div class="bar-chart" role="img" aria-label="Monthly income exceeds expenses in each of the six sample months">
-          <div class="axis-labels">
-            @for (tick of chartTicks; track tick) { <span>{{ tick / 1000 | number:'1.0-0' }}k</span> }
-          </div>
-          <div class="plot">
-            <div class="grid-lines"><i></i><i></i><i></i><i></i></div>
-            <div class="bar-columns">
-              @for (month of months; track month.name) {
-                <div class="month-group">
-                  <div class="bars">
-                    <div class="bar income-bar" [style.height.%]="month.income / chartMax * 100" [title]="month.name + ' income: PHP ' + month.income"></div>
-                    <div class="bar expense-bar" [style.height.%]="month.expenses / chartMax * 100" [title]="month.name + ' expenses: PHP ' + month.expenses"></div>
-                  </div>
-                  <span>{{ month.name }}</span>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-        <div class="chart-legend"><span><i class="dot teal"></i>Income</span><span><i class="dot blue"></i>Expenses</span></div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="dashboard-panel">
-      <mat-card-content>
-        <div class="panel-heading"><h2>Expense Breakdown</h2><span>This month</span></div>
-        <div class="breakdown-content">
-          <div class="donut" role="img" aria-label="Food 35 percent, transportation 20 percent, shopping 15 percent, bills 15 percent, others 15 percent">
-            <div class="donut-hole">
-              <strong>{{ summaries[2].amount | currency:currencyCode:'symbol':'1.2-2' }}</strong>
-              <small>Total Expenses</small>
-            </div>
-          </div>
-          <div class="breakdown-legend">
-            @for (category of expenses; track category.label) {
-              <div class="breakdown-item">
-                <span class="category-name"><i class="dot" [style.background]="category.color"></i>{{ category.label }}</span>
-                <strong>{{ category.percent }}%</strong>
+  @if (store.state().loading) {
+    <p class="dashboard-notice" role="status">
+      <span class="loading-dot" aria-hidden="true"></span>Loading financial dashboard...
+    </p>
+  }
+  @if (store.state().error) {
+    <div class="dashboard-notice error-text" role="alert">
+      <p>{{ store.state().error }}</p>
+      <button
+        class="action-button"
+        type="button"
+        (click)="store.refresh()"
+        [disabled]="controls.invalid"
+      >
+        Retry
+      </button>
+    </div>
+  }
+  @if (store.data(); as data) {
+    @if (
+      !data.recentTransactions.length && !data.summary.totalIncome && !data.summary.totalExpenses
+    ) {
+      <p class="dashboard-notice" role="status">
+        No transactions recorded for {{ store.periodLabel() }}. Totals below reflect this empty
+        period.
+      </p>
+    }
+    @if (store.state().categoryError) {
+      <div class="dashboard-notice" role="status">
+        {{ store.state().categoryError }}
+        <button class="action-button" type="button" (click)="store.refresh()">
+          Retry category lookup
+        </button>
+      </div>
+    }
+    <section class="summary-grid" aria-label="Financial summary">
+      @for (item of summaries(); track item.kind) {
+        <mat-card class="summary-card" [class]="item.kind"
+          ><mat-card-content>
+            <div class="summary-heading">
+              <div class="summary-icon">
+                <mat-icon>{{ item.icon }}</mat-icon>
               </div>
-            }
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
-
-  <section class="details-grid" aria-label="Transactions and budgets">
-    <mat-card class="dashboard-panel">
-      <mat-card-content>
-        <div class="panel-heading"><h2>Recent Transactions</h2><span>Latest activity</span></div>
-        <div class="table-scroll">
-          <table class="transaction-table">
-            <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="amount">Amount</th></tr></thead>
-            <tbody>
-              @for (transaction of transactions; track $index) {
-                <tr>
-                  <td>{{ transaction.date | date:'MMM d, y':'':'en-US' }}</td>
-                  <td class="description">{{ transaction.description }}</td>
-                  <td><span class="transaction-category"><mat-icon>{{ transaction.icon }}</mat-icon>{{ transaction.category }}</span></td>
-                  <td class="amount" [class.credit]="transaction.amount > 0" [class.debit]="transaction.amount < 0">{{ transaction.amount | currency:currencyCode:'symbol':'1.2-2' }}</td>
-                </tr>
+              <span>{{ item.label }}</span>
+            </div>
+            <strong class="summary-number">
+              @if (item.amount === null) {
+                <span title="Savings rate is unavailable when income is zero">Unavailable</span>
+              } @else if (item.rate) {
+                {{ item.amount | number: '1.2-2' }}%
+              } @else {
+                {{ item.amount | currency: currencyCode : 'symbol' : '1.2-2' }}
               }
-            </tbody>
-          </table>
-        </div>
-      </mat-card-content>
-    </mat-card>
+            </strong>
+            <div class="summary-period">{{ store.periodLabel() }}</div>
+          </mat-card-content></mat-card
+        >
+      }
+    </section>
 
-    <mat-card class="dashboard-panel">
-      <mat-card-content>
-        <div class="panel-heading"><h2>Budget Progress</h2><span>This month</span></div>
-        <div class="budget-list">
-          @for (budget of budgets; track budget.label) {
-            <div class="budget-row">
-              <span class="budget-name">{{ budget.label }}</span>
-              <div class="budget-track" role="progressbar" [attr.aria-label]="budget.label + ' budget used'" [attr.aria-valuenow]="budget.percent" aria-valuemin="0" aria-valuemax="100">
-                <span class="budget-fill" [class]="budget.tone" [style.width.%]="budget.percent"></span>
-              </div>
-              <span class="budget-percent">{{ budget.percent }}%</span>
+    <section class="analytics-grid" aria-label="Financial charts">
+      <mat-card class="dashboard-panel"
+        ><mat-card-content>
+          <div class="panel-heading">
+            <h2>Income vs Expenses</h2>
+            <span>6 months ending {{ store.periodLabel() }}</span>
+          </div>
+          @if (historyLoading()) {
+            <p class="chart-notice" role="status">Loading historical months...</p>
+          }
+          @if (historyIncomplete()) {
+            <div class="chart-notice" role="status">
+              Some months are unavailable; missing values are not zero.
+              <button class="action-button" type="button" (click)="store.refresh()">
+                Retry history
+              </button>
             </div>
           }
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </section>
+          <div class="bar-chart" role="img" [attr.aria-label]="chartDescription()">
+            <div class="axis-labels">
+              @for (tick of chartTicks(); track $index) {
+                <span>{{ tick | number: '1.0-2' }}</span>
+              }
+            </div>
+            <div class="plot">
+              <div class="grid-lines"><i></i><i></i><i></i><i></i></div>
+              <div class="bar-columns">
+                @for (month of store.state().history; track month.key) {
+                  <div class="month-group">
+                    <div class="bars">
+                      @if (month.summary; as summary) {
+                        <div
+                          class="bar income-bar"
+                          [style.height.%]="(summary.totalIncome / chartMax()) * 100"
+                          [title]="month.label + ' income: PHP ' + summary.totalIncome"
+                        ></div>
+                        <div
+                          class="bar expense-bar"
+                          [style.height.%]="(summary.totalExpenses / chartMax()) * 100"
+                          [title]="month.label + ' expenses: PHP ' + summary.totalExpenses"
+                        ></div>
+                      } @else {
+                        <span class="missing-month" [title]="month.label + ' unavailable'">{{
+                          month.status === 'loading' ? '...' : 'N/A'
+                        }}</span>
+                      }
+                    </div>
+                    <span [title]="month.label"
+                      >{{ monthNames[month.month - 1].slice(0, 3) }}<br />{{ month.year }}</span
+                    >
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <span><i class="dot teal"></i>Income</span><span><i class="dot blue"></i>Expenses</span>
+          </div>
+        </mat-card-content></mat-card
+      >
+
+      <mat-card class="dashboard-panel"
+        ><mat-card-content>
+          <div class="panel-heading">
+            <h2>Expense Breakdown</h2>
+            <span>{{ store.periodLabel() }}</span>
+          </div>
+          <div class="breakdown-content">
+            <div
+              class="donut"
+              role="img"
+              [style.background]="donutBackground()"
+              [attr.aria-label]="donutDescription()"
+            >
+              <div class="donut-hole">
+                <strong>{{
+                  data.summary.totalExpenses | currency: currencyCode : 'symbol' : '1.2-2'
+                }}</strong
+                ><small>Total Expenses</small>
+              </div>
+            </div>
+            <div class="breakdown-legend">
+              @for (category of expenses(); track category.categoryId) {
+                <div class="breakdown-item">
+                  <span class="category-name"
+                    ><i class="dot" [style.background]="category.color"></i
+                    >{{ category.categoryName }}</span
+                  >
+                  <strong
+                    [title]="(category.amount | currency: currencyCode : 'symbol' : '1.2-2') ?? ''"
+                    >{{ category.percent | number: '1.2-2' }}%</strong
+                  >
+                </div>
+              } @empty {
+                <p class="empty-state">No expenses recorded for this month.</p>
+              }
+            </div>
+          </div>
+        </mat-card-content></mat-card
+      >
+    </section>
+
+    <section class="details-grid" aria-label="Transactions and budgets">
+      <mat-card class="dashboard-panel"
+        ><mat-card-content>
+          <div class="panel-heading">
+            <h2>Recent Transactions</h2>
+            <span>Latest 5 in this month</span>
+          </div>
+          <div class="table-scroll">
+            <table class="transaction-table">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Category</th>
+                  <th scope="col" class="amount">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (transaction of transactions(); track transaction.id) {
+                  <tr>
+                    <td>
+                      {{
+                        transaction.transactionDate + 'T00:00:00Z'
+                          | date: 'MMM d, y' : 'UTC' : 'en-US'
+                      }}
+                    </td>
+                    <td class="description">{{ transaction.description || 'No description' }}</td>
+                    <td>
+                      <span class="transaction-category"
+                        ><mat-icon>{{ transaction.icon }}</mat-icon
+                        >{{ transaction.category }}</span
+                      >
+                    </td>
+                    <td
+                      class="amount"
+                      [class.credit]="transaction.type === 'INCOME'"
+                      [class.debit]="transaction.type === 'EXPENSE'"
+                    >
+                      {{ transaction.signedAmount | currency: currencyCode : 'symbol' : '1.2-2' }}
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="empty-state">
+                      No transactions recorded for this month.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </mat-card-content></mat-card
+      >
+
+      <mat-card class="dashboard-panel"
+        ><mat-card-content>
+          <div class="panel-heading">
+            <h2>Budget Progress</h2>
+            <span>{{ store.periodLabel() }}</span>
+          </div>
+          <div class="budget-list">
+            @for (budget of budgets(); track budget.id) {
+              <div class="budget-item">
+                <div class="budget-row">
+                  <span class="budget-name">{{ budget.label }}</span>
+                  <div
+                    class="budget-track"
+                    role="progressbar"
+                    [attr.aria-label]="budget.label + ' budget used'"
+                    [attr.aria-valuenow]="budget.width"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    [attr.aria-valuetext]="budget.percentageUsed + '% used, ' + budget.budgetStatus"
+                  >
+                    <span
+                      class="budget-fill"
+                      [class]="budget.budgetStatus"
+                      [style.width.%]="budget.width"
+                    ></span>
+                  </div>
+                  <span class="budget-percent">{{ budget.percentageUsed | number: '1.2-2' }}%</span>
+                </div>
+                <div class="budget-detail">
+                  <span class="budget-status" [class]="budget.budgetStatus">{{
+                    budget.budgetStatus
+                  }}</span>
+                  <span
+                    >Spent {{ budget.spentAmount | currency: currencyCode : 'symbol' : '1.2-2' }} of
+                    {{ budget.monthlyLimit | currency: currencyCode : 'symbol' : '1.2-2' }}</span
+                  >
+                  <span
+                    >Remaining
+                    {{ budget.remainingAmount | currency: currencyCode : 'symbol' : '1.2-2' }}</span
+                  >
+                </div>
+              </div>
+            } @empty {
+              <p class="empty-state">No budgets set for this month.</p>
+            }
+          </div>
+        </mat-card-content></mat-card
+      >
+    </section>
+  }
 </section>
