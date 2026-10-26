@@ -7,6 +7,8 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
+import core_api.user.UserRepository;
+import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -20,19 +22,23 @@ public class TokenService {
     private final Clock clock;
     private final String issuer;
     private final String audience;
+    private final UserRepository users;
 
     public TokenService(JwtEncoder encoder, Clock clock, @Value("${app.jwt.issuer}") String issuer,
-                        @Value("${app.jwt.audience}") String audience) {
+                        @Value("${app.jwt.audience}") String audience, UserRepository users) {
         this.encoder = encoder;
         this.clock = clock;
         this.issuer = issuer;
         this.audience = audience;
+        this.users = users;
     }
 
     public String issue(UUID userId) {
+        var user = users.findById(userId)
+                .orElseThrow(() -> new BadCredentialsException("Invalid authentication"));
         var now = clock.instant();
         var claims = JwtClaimsSet.builder().issuer(issuer).audience(List.of(audience))
-                .subject(userId.toString()).issuedAt(now).notBefore(now)
+                .subject(userId.toString()).claim("token_version", user.getTokenVersion()).issuedAt(now).notBefore(now)
                 .expiresAt(now.plus(LIFETIME)).id(UUID.randomUUID().toString()).build();
         return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();

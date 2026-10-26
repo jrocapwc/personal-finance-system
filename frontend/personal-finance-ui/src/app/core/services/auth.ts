@@ -131,6 +131,33 @@ export class AuthService {
       queryParams: { returnUrl: this.safeReturnUrl(returnUrl) },
     });
   }
+  loadProfile(): Observable<UserResponse> {
+    const revision = this.revision;
+    return this.http.get<UserResponse>('/api/v1/users/me', { transferCache: false }).pipe(
+      tap((user) => this.updateCurrentUser(user, revision)),
+    );
+  }
+  updateProfile(name: string): Observable<UserResponse> {
+    const revision = this.revision;
+    return this.http.put<UserResponse>('/api/v1/users/me', { name: name.trim() }).pipe(
+      tap((user) => this.updateCurrentUser(user, revision)),
+    );
+  }
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.put<void>('/api/v1/users/me/password', { currentPassword, newPassword });
+  }
+  passwordChanged(): void {
+    // The server has already revoked all tokens and cleared the HttpOnly cookie.
+    this.clearSession();
+    this.status.set('unauthenticated');
+    this.channel?.postMessage('changed');
+    void this.router.navigateByUrl('/login');
+  }
+  private updateCurrentUser(user: UserResponse, revision: number): void {
+    if (revision === this.revision && this.status() === 'authenticated' && user.id === this.userState()?.id) {
+      this.userState.set(user);
+    }
+  }
   logout(): void {
     if (this.loggingOut) return;
     this.loggingOut = true;
@@ -160,7 +187,7 @@ export class AuthService {
       });
   }
   safeReturnUrl(url: string | null): string {
-    return url && /^\/(dashboard|categories|transactions|budgets)([?;#]|$)/.test(url)
+    return url && /^\/(dashboard|categories|transactions|budgets|account-settings)([?;#]|$)/.test(url)
       ? url
       : '/dashboard';
   }

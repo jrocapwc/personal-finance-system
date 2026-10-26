@@ -1,0 +1,168 @@
+<header class="page-heading">
+  <h1>Account Settings</h1>
+  <p>Manage your personal information and account security.</p>
+</header>
+@if (loading()) {
+  <div class="state-card" role="status" aria-live="polite">Loading your profile…</div>
+} @else if (loadError()) {
+  <div class="state-card" role="alert">
+    <p>{{ loadError() }}</p>
+    <button mat-stroked-button type="button" (click)="load()">Retry</button>
+  </div>
+} @else if (user(); as profile) {
+  <div class="settings-grid">
+    <section class="settings-card" aria-labelledby="profile-title" [attr.aria-busy]="saving()">
+      <div class="section-heading">
+        <div>
+          <h2 id="profile-title">My Profile</h2>
+          <p>Your personal account details.</p>
+        </div>
+        @if (!editing()) {
+          <button mat-stroked-button type="button" (click)="edit()" [disabled]="busy()">
+            Edit Profile
+          </button>
+        }
+      </div>
+      <div class="identity">
+        <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+        <div>
+          <strong>{{ profile.name }}</strong
+          ><span>Personal account</span>
+        </div>
+      </div>
+      @if (profileError()) {
+        <p class="notice error" role="alert">{{ profileError() }}</p>
+      }
+      @if (success()) {
+        <p class="notice success" role="status">{{ success() }}</p>
+      }
+      @if (editing()) {
+        <form [formGroup]="profileForm" (ngSubmit)="save()" novalidate>
+          <fieldset [disabled]="busy()">
+            <div class="field">
+              <label for="account-name">Full Name</label>
+              <input
+                id="account-name"
+                formControlName="name"
+                autocomplete="name"
+                required
+                aria-describedby="name-error"
+                [attr.aria-invalid]="
+                  profileForm.controls.name.touched && profileForm.controls.name.invalid
+                "
+              />
+              <span id="name-error" class="field-error" aria-live="polite">
+                @if (profileForm.controls.name.touched && profileForm.controls.name.invalid) {
+                  Enter a full name, up to 100 characters.
+                }
+              </span>
+            </div>
+            <div class="actions">
+              <button mat-flat-button type="submit" [disabled]="busy()">
+                {{ saving() ? 'Saving…' : 'Save' }}
+              </button>
+              <button mat-button type="button" (click)="cancel()" [disabled]="busy()">
+                Cancel
+              </button>
+            </div>
+          </fieldset>
+        </form>
+      }
+      <dl>
+        @if (!editing()) {
+          <div>
+            <dt>Full Name</dt>
+            <dd>{{ profile.name }}</dd>
+          </div>
+        }
+        <div>
+          <dt>Email Address</dt>
+          <dd>{{ profile.email }}</dd>
+        </div>
+        <div>
+          <dt>Member Since</dt>
+          <dd>{{ profile.createdAt | date: 'longDate' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section
+      class="settings-card"
+      aria-labelledby="security-title"
+      [attr.aria-busy]="changingPassword()"
+    >
+      <div class="section-heading">
+        <div>
+          <h2 id="security-title">Security</h2>
+          <p>Keep your account protected.</p>
+        </div>
+      </div>
+      <h3>Change Password</h3>
+      <p class="helper" id="password-policy">
+        Use at least 12 characters and no more than 72 UTF-8 bytes. Some characters use multiple
+        bytes. Choose a different password from your current one.
+      </p>
+      <p class="helper">
+        After updating your password, you will be signed out on all devices and must sign in again.
+      </p>
+      @if (passwordError()) {
+        <p class="notice error" role="alert">{{ passwordError() }}</p>
+      }
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
+        <fieldset [disabled]="busy()">
+          @for (field of passwordFields; track field.key) {
+            <div class="field">
+              <label [for]="field.key">{{ field.label }}</label>
+              <div class="password-input">
+                <input
+                  [id]="field.key"
+                  [formControlName]="field.key"
+                  [type]="hidden()[field.key] ? 'password' : 'text'"
+                  [attr.autocomplete]="field.autocomplete"
+                  required
+                  [attr.aria-invalid]="!!fieldError(field.key)"
+                  [attr.aria-describedby]="field.key + '-error password-policy'"
+                />
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="toggle(field.key)"
+                  [disabled]="busy()"
+                  [attr.aria-label]="
+                    (hidden()[field.key] ? 'Show ' : 'Hide ') + field.label.toLowerCase()
+                  "
+                  [attr.aria-pressed]="!hidden()[field.key]"
+                >
+                  <mat-icon
+                    ><svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      aria-hidden="true"
+                    >
+                      <use
+                        [attr.href]="
+                          'ui-icons.svg#' + (hidden()[field.key] ? 'visibility' : 'visibility_off')
+                        "
+                      ></use></svg
+                  ></mat-icon>
+                </button>
+              </div>
+              <span [id]="field.key + '-error'" class="field-error" aria-live="polite">{{
+                fieldError(field.key)
+              }}</span>
+            </div>
+          }
+          <div class="actions">
+            <button mat-flat-button type="submit" [disabled]="busy()">
+              {{ changingPassword() ? 'Updating Password…' : 'Update Password' }}
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  </div>
+}

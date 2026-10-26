@@ -58,7 +58,7 @@ class CoreApiApplicationTests extends JwtTestSupport {
         assertThat(response.statusCode()).isEqualTo(200);
         java.util.Map<String, Object> paths = JsonPath.read(response.body(), "$.paths");
         assertThat(paths).containsOnlyKeys("/api/v1/auth/csrf", "/api/v1/auth/session", "/api/v1/auth/logout", "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/users/me",
-                "/api/v1/categories", "/api/v1/categories/{id}",
+                "/api/v1/users/me/password", "/api/v1/categories", "/api/v1/categories/{id}",
                 "/api/v1/transactions", "/api/v1/transactions/{id}",
                 "/api/v1/budgets", "/api/v1/budgets/{id}", "/api/v1/dashboard", "/api/v1/insights", "/api/v1/chat/messages",
                 "/api/v1/chat/conversations", "/api/v1/chat/conversations/{id}", "/api/v1/chat/conversations/{id}/messages",
@@ -80,6 +80,14 @@ class CoreApiApplicationTests extends JwtTestSupport {
         assertThat(registerResponses).containsKeys("201", "400", "409");
         java.util.Map<String, Object> meResponses = JsonPath.read(response.body(), "$.paths['/api/v1/users/me'].get.responses");
         assertThat(meResponses).containsKeys("200", "401");
+        java.util.Map<String, Object> meMethods = JsonPath.read(response.body(), "$.paths['/api/v1/users/me']");
+        assertThat(meMethods).containsOnlyKeys("get", "put");
+        java.util.Map<String, Object> passwordMethods = JsonPath.read(response.body(), "$.paths['/api/v1/users/me/password']");
+        assertThat(passwordMethods).containsOnlyKeys("put");
+        java.util.Map<String, Object> passwordResponses = JsonPath.read(response.body(), "$.paths['/api/v1/users/me/password'].put.responses");
+        assertThat(passwordResponses).containsKeys("204", "400", "401", "403", "500");
+        assertThat(JsonPath.<Boolean>read(response.body(), "$.components.schemas.ChangePasswordRequest.properties.currentPassword.writeOnly")).isTrue();
+        assertThat(JsonPath.<Boolean>read(response.body(), "$.components.schemas.ChangePasswordRequest.properties.newPassword.writeOnly")).isTrue();
         java.util.Map<String, Object> userProperties = JsonPath.read(response.body(), "$.components.schemas.UserResponse.properties");
         assertThat(userProperties).doesNotContainKeys("password", "passwordHash", "password_hash");
         assertThat(JsonPath.<Boolean>read(response.body(), "$.components.schemas.RegisterRequest.properties.password.writeOnly"))

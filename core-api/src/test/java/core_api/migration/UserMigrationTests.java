@@ -34,14 +34,16 @@ class UserMigrationTests {
             insert.setString(4, "x".repeat(60));
             insert.executeUpdate();
         }
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement();
-             var rows = statement.executeQuery("SELECT id, email FROM users")) {
+             var rows = statement.executeQuery("SELECT id, email, password_hash, token_version FROM users")) {
             assertThat(rows.next()).isTrue();
             assertThat(rows.getObject("id", UUID.class)).isEqualTo(id);
             assertThat(rows.getString("email")).isEqualTo("preserved@example.com");
+            assertThat(rows.getString("password_hash")).isEqualTo("x".repeat(60));
+            assertThat(rows.getLong("token_version")).isZero();
             assertThat(rows.next()).isFalse();
         }
     }

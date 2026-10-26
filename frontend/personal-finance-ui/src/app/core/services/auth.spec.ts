@@ -93,6 +93,24 @@ describe('AuthService', () => {
     http.expectOne('/api/v1/auth/logout').flush(null);
     expect(auth.isAuthenticated()).toBe(false);
   });
+  it('does not restore a profile response received after session invalidation', () => {
+    login();
+    auth.updateProfile('Changed Name').subscribe();
+    const update = http.expectOne('/api/v1/users/me');
+    auth.invalidate();
+    update.flush({ ...testUser, name: 'Changed Name' });
+    expect(auth.currentUser()).toBeNull();
+  });
+  it('does not accept another user identity from an account response', () => {
+    login();
+    auth.loadProfile().subscribe();
+    http.expectOne('/api/v1/users/me').flush({ ...testUser, id: 'another-user', name: 'Other User' });
+    expect(auth.currentUser()).toEqual(testUser);
+  });
+  it('preserves Account Settings as a safe destination after sign-in', () => {
+    expect(auth.safeReturnUrl('/account-settings')).toBe('/account-settings');
+    expect(auth.safeReturnUrl('/account-settings/../../login')).toBe('/dashboard');
+  });
   it.each([0, -1, NaN])('rejects an invalid lifetime %s', (expiresIn) => {
     let failed = false;
     auth.login(testCredentials).subscribe({ error: () => (failed = true) });

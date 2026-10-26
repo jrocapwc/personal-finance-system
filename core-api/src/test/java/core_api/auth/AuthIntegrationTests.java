@@ -139,7 +139,7 @@ class AuthIntegrationTests extends JwtTestSupport {
         var claims = JwtClaimsSet.builder()
                 .issuer(scenario.equals("issuer") ? "another-issuer" : "personal-finance-core-api")
                 .audience(List.of(scenario.equals("audience") ? "another-api" : "personal-finance-core-api"))
-                .issuedAt(now.minusSeconds(7200))
+                .issuedAt(now.minusSeconds(7200)).claim("token_version", 0L)
                 .notBefore(scenario.equals("future") ? now.plusSeconds(300) : now.minusSeconds(7200));
         if (!scenario.equals("missing-expiration")) {
             claims.expiresAt(scenario.equals("expired") ? now.minusSeconds(1) : now.plusSeconds(3600));

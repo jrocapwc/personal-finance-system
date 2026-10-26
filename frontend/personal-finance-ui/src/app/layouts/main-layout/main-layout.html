@@ -122,6 +122,14 @@
           ></mat-icon>
           <span matListItemTitle>Bank Connections</span>
         </a>
+        <a mat-list-item routerLink="/account-settings" routerLinkActive="active-link" (click)="closeOnMobile()">
+          <mat-icon matListItemIcon>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <use href="ui-icons.svg#manage_accounts"></use>
+            </svg>
+          </mat-icon>
+          <span matListItemTitle>Account Settings</span>
+        </a>
         <button mat-list-item type="button" (click)="openAssistant()">
           <mat-icon matListItemIcon
             ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">

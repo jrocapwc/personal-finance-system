@@ -1,0 +1,203 @@
+:host {
+  display: block;
+  min-width: 0;
+  color: var(--text-primary);
+}
+.page-heading {
+  margin-bottom: 24px;
+}
+h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+}
+h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+}
+h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+p {
+  line-height: 1.6;
+}
+.page-heading p,
+.section-heading p,
+.helper {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 14px;
+}
+.helper {
+  margin-bottom: 16px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 22px;
+  align-items: start;
+}
+.settings-card,
+.state-card {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 26px;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 26px;
+  flex-wrap: wrap;
+}
+.identity {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+.identity > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.identity strong,
+.identity span:not(.avatar) {
+  display: block;
+}
+.identity span:not(.avatar) {
+  color: var(--text-secondary);
+  margin-top: 5px;
+  font-size: 13px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 21px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+dl {
+  margin: 0;
+}
+dl > div {
+  padding: 18px 0;
+  border-top: 1px solid var(--border-color);
+}
+dt {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+dd {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+fieldset {
+  border: 0;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+.field {
+  margin: 0 0 18px;
+}
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--surface-alt);
+  font-size: 15px;
+}
+input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[aria-invalid='true'] {
+  border-color: var(--negative);
+}
+input:disabled,
+fieldset:disabled input {
+  opacity: 0.65;
+}
+.password-input {
+  position: relative;
+}
+.password-input input {
+  padding-right: 54px;
+}
+.password-input button {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  color: var(--text-secondary);
+}
+.field-error {
+  display: block;
+  color: var(--negative);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.notice {
+  border-left: 3px solid currentColor;
+  padding: 12px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  background: var(--surface-alt);
+}
+.error {
+  color: var(--negative);
+}
+.success {
+  color: var(--positive);
+}
+@media (max-width: 1000px) {
+  .settings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .settings-card,
+  .state-card {
+    padding: 20px 16px;
+  }
+  h1 {
+    font-size: 23px;
+  }
+  .actions button {
+    flex: 1;
+  }
+}
+@media (max-width: 768px) {
+  :host {
+    // Allow the last form action to scroll above the floating assistant.
+    padding-bottom: 80px;
+  }
+}

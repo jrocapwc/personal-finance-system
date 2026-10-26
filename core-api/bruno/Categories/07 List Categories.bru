@@ -10,8 +10,17 @@ get {
   auth: bearer
 }
 
+headers {
+  Content-Type: application/json
+  X-XSRF-TOKEN: 22876698-0e5e-4a8d-b911-a46f16490c98
+}
+
 auth:bearer {
-  token: {{accessToken}}
+  token: eyJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl92ZXJzaW9uIjowLCJzdWIiOiJjNTRlMmMxYS1iNGYyLTQ0NmItOGJkOC0zODU4NWNjZjQxZTQiLCJhdWQiOiJwZXJzb25hbC1maW5hbmNlLWNvcmUtYXBpIiwibmJmIjoxNzkzMDAxMTExLCJpc3MiOiJwZXJzb25hbC1maW5hbmNlLWNvcmUtYXBpIiwiZXhwIjoxNzkzMDA0NzExLCJpYXQiOjE3OTMwMDExMTEsImp0aSI6IjU1ZGFmMmEyLWFiNzgtNGIyOC1iYWVmLTNjNmZiYzc3OTE3YyJ9.BHAMcjJD8xfk8q6rMWqJCLpbQ3ldyW_88WLOIxMbVSI
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:8080
 }
 
 script:post-response {

@@ -44,11 +44,13 @@ public class AuthService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoginResponse login(LoginRequest request) {
+        // Serialize login with password changes so an old password cannot receive the new token version.
+        var account = users.findByEmailForLogin(request.email());
         authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.password()));
-        var user = users.findByEmail(request.email())
+        var user = account
                 .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
         return new LoginResponse(tokens.issue(user.getId()), "Bearer", TokenService.LIFETIME.toSeconds(),
                 UserResponse.from(user));

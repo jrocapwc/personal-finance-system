@@ -98,7 +98,12 @@ public class SecurityConfiguration {
                             } catch (IllegalArgumentException exception) {
                                 throw new BadCredentialsException("Invalid token identity");
                             }
-                            if (!users.existsById(userId)) {
+                            var user = users.findById(userId)
+                                    .orElseThrow(() -> new BadCredentialsException("Invalid token identity"));
+                            Object version = token.getClaims().get("token_version");
+                            // Require an integer claim; legacy tokens without a version must log in again.
+                            if (!(version instanceof Long || version instanceof Integer)
+                                    || ((Number) version).longValue() != user.getTokenVersion()) {
                                 throw new BadCredentialsException("Invalid token identity");
                             }
                             return new JwtAuthenticationToken(token, List.of(), userId.toString());

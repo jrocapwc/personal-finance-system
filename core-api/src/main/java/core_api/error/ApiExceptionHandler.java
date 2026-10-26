@@ -1,6 +1,7 @@
 package core_api.error;
 
 import core_api.auth.DuplicateEmailException;
+import core_api.user.InvalidPasswordChangeException;
 import core_api.insights.UpstreamInsightsException;
 import core_api.insights.InvalidInsightsRequestException;
 import core_api.dashboard.InvalidDashboardRequestException;
@@ -59,6 +60,11 @@ public class ApiExceptionHandler {
     ResponseEntity<ApiError> authentication(HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
                 .body(ApiError.of(401, "UNAUTHORIZED", "Invalid credentials or authentication", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(InvalidPasswordChangeException.class)
+    ResponseEntity<ApiError> invalidPasswordChange(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD_CHANGE", "Password change rejected", request);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

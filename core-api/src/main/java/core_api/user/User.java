@@ -32,6 +32,10 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 60)
     private String passwordHash;
 
+    @JsonIgnore
+    @Column(name = "token_version", nullable = false)
+    private long tokenVersion;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -67,6 +71,15 @@ public class User {
     public String getEmail() { return email; }
     @JsonIgnore
     public String getPasswordHash() { return passwordHash; }
+    @JsonIgnore
+    public long getTokenVersion() { return tokenVersion; }
+
+    public void changePassword(String encodedPassword) {
+        passwordHash = encodedPassword;
+        tokenVersion = Math.incrementExact(tokenVersion);
+    }
+
+    public void updateName(String name) { this.name = name.strip(); }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

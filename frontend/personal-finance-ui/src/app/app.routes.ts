@@ -28,6 +28,11 @@ export const routes: Routes = [
     loadComponent: () => import('./layouts/main-layout/main-layout').then((m) => m.MainLayout),
     children: [
       {
+        path: 'account-settings',
+        title: 'Account Settings | YamanTracker',
+        loadComponent: () => import('./features/account-settings/account-settings').then((m) => m.AccountSettings),
+      },
+      {
         path: 'bank-connections',
         title: 'Bank Connections | YamanTracker',
         loadComponent: () =>

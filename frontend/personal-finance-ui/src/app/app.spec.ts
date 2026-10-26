@@ -73,7 +73,30 @@ describe('Authentication routes and layouts', () => {
     await fixture.whenStable();
     expect(TestBed.inject(ThemeService).isDarkMode()).toBe(true);
   });
-  it.each(['/dashboard', '/categories', '/transactions', '/budgets', '/', '/unknown'])(
+  it('opens Account Settings in the shared layout, updates the header name and supports both themes', async () => {
+    login();
+    const harness = await RouterTestingHarness.create('/account-settings');
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/users/me').flush(testLogin.user);
+    harness.detectChanges();
+    const element = harness.routeNativeElement!;
+    expect(element.querySelector('app-account-settings')).toBeTruthy();
+    expect(element.querySelector('a[routerLink="/account-settings"]')?.textContent).toContain('Account Settings');
+    expect(element.querySelector('.toolbar-title')?.textContent).toContain('Account Settings');
+    expect(element.querySelector('app-ai-assistant')).toBeTruthy();
+    const edit = Array.from(element.querySelectorAll('button')).find((button) => button.textContent?.includes('Edit Profile'))!;
+    edit.click(); harness.detectChanges();
+    const input = element.querySelector<HTMLInputElement>('#account-name')!;
+    input.value = 'Renamed User'; input.dispatchEvent(new Event('input'));
+    element.querySelector('app-account-settings form')!.dispatchEvent(new Event('submit'));
+    TestBed.inject(HttpTestingController).expectOne('/api/v1/users/me').flush({ ...testLogin.user, name: 'Renamed User' });
+    harness.detectChanges();
+    expect(element.querySelector('.profile')?.textContent).toContain('Renamed User');
+    expect(element.querySelector('app-account-settings')?.textContent).toContain('Renamed User');
+    TestBed.inject(ThemeService).toggleTheme(); harness.detectChanges();
+    expect(TestBed.inject(ThemeService).isDarkMode()).toBe(true);
+    expect(element.querySelector('app-account-settings')).toBeTruthy();
+  });
+  it.each(['/dashboard', '/categories', '/transactions', '/budgets', '/account-settings', '/', '/unknown'])(
     'redirects unauthenticated %s to login',
     async (url) => {
       const harness = await RouterTestingHarness.create(url);
