@@ -75,12 +75,18 @@ describe('Authentication routes and layouts', () => {
   });
   it('opens Account Settings in the shared layout, updates the header name and supports both themes', async () => {
     login();
-    const harness = await RouterTestingHarness.create('/account-settings');
+    const harness = await RouterTestingHarness.create('/dashboard');
+    const profileLink = harness.routeNativeElement!.querySelector<HTMLAnchorElement>('a.profile')!;
+    expect(profileLink.getAttribute('aria-label')).toBe('Account Settings');
+    expect(profileLink.textContent).toContain(testLogin.user.name);
+    expect(harness.routeNativeElement!.querySelector('.navigation a[routerLink="/account-settings"]')).toBeNull();
+    profileLink.click();
+    await harness.fixture.whenStable();
     TestBed.inject(HttpTestingController).expectOne('/api/v1/users/me').flush(testLogin.user);
     harness.detectChanges();
     const element = harness.routeNativeElement!;
     expect(element.querySelector('app-account-settings')).toBeTruthy();
-    expect(element.querySelector('a[routerLink="/account-settings"]')?.textContent).toContain('Account Settings');
+    expect(element.querySelector('a.profile')?.getAttribute('aria-current')).toBe('page');
     expect(element.querySelector('.toolbar-title')?.textContent).toContain('Account Settings');
     expect(element.querySelector('app-ai-assistant')).toBeTruthy();
     const edit = Array.from(element.querySelectorAll('button')).find((button) => button.textContent?.includes('Edit Profile'))!;

@@ -133,6 +133,15 @@
   gap: 9px;
   margin: 0 8px;
   font-size: 12px;
+  min-height: 44px;
+  padding: 4px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.profile:hover,
+.profile-active {
+  background: var(--accent-soft);
 }
 .profile-avatar {
   display: grid;

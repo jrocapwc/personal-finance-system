@@ -14,7 +14,7 @@ A password change revokes all existing tokens, clears the current authentication
 
 ## Integration and behavior
 
-`/account-settings` is lazy loaded under the existing authenticated layout and its parent/child auth guards. Its server route uses client rendering, as do other private pages. The existing sidebar now includes Account Settings with a self-hosted `manage_accounts` SVG symbol inside Angular Material's icon component. Existing mobile navigation closes the drawer after selection. The toolbar title recognizes the route, and the existing sign-in return destination allowlist includes it.
+`/account-settings` is lazy loaded under the existing authenticated layout and its parent/child auth guards. Its server route uses client rendering, as do other private pages. Clicking the current user's name or avatar in the top toolbar opens Account Settings; on mobile the avatar remains visible and clickable. The profile link has an accessible label, keyboard focus, and active-route feedback. Account Settings is omitted from the sidebar. Existing mobile navigation closes the drawer after selection. The toolbar title recognizes the route, and the existing sign-in return destination allowlist includes it.
 
 The existing `AuthService` owns all current-user state and account HTTP calls. Profile loads and updates write to its current-user signal only if the session revision and user ID still match, preserving the expiration timer and finance caches. Header names and initials update through their existing computed signals; no duplicate profile or authentication store is introduced.
 

@@ -52,8 +52,11 @@ def test_profile_password_session_themes_and_mobile(browser_context, website):
 
     page.set_viewport_size({"width": 390, "height": 844})
     page.get_by_role("button", name="Toggle sidebar").click()
-    page.get_by_role("link", name="Account Settings", exact=True).click()
+    assert page.locator('.navigation a[href="/account-settings"]').count() == 0
+    page.get_by_role("link", name="Dashboard", exact=True).click()
     expect(page.locator(".mat-drawer-backdrop")).not_to_be_visible()
+    page.get_by_role("link", name="Account Settings", exact=True).click()
+    expect(page.get_by_role("heading", name="Account Settings", exact=True)).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     page.screenshot(path=str(SHOTS / "mobile-dark.png"), full_page=True)
     page.get_by_role("button", name="Update Password", exact=True).scroll_into_view_if_needed()
