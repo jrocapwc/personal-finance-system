@@ -1,7 +1,7 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { LoginRequest, LoginResponse, RegisterRequest, UserResponse } from '../models/auth.model';
 
 @Injectable({ providedIn: 'root' })
@@ -14,6 +14,9 @@ export class AuthService {
   private revision = 0;
   private readonly userState = signal<UserResponse | null>(null);
   readonly currentUser = this.userState.asReadonly();
+  private readonly sessionChangesSubject = new Subject<void>();
+  // Synchronous notification lets private views cancel work before another session starts.
+  readonly sessionChanges = this.sessionChangesSubject.asObservable();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.clearSession());
@@ -43,6 +46,7 @@ export class AuthService {
         this.token = response.accessToken;
         this.expiresAt = Date.now() + response.expiresIn * 1000;
         this.userState.set(response.user);
+        this.sessionChangesSubject.next();
         this.expiryTimer = setTimeout(() => this.logout(), response.expiresIn * 1000);
       }),
     );
@@ -71,5 +75,6 @@ export class AuthService {
     this.token = null;
     this.expiresAt = 0;
     this.userState.set(null);
+    this.sessionChangesSubject.next();
   }
 }

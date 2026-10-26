@@ -1,155 +1,200 @@
-
 <div class="assistant-widget">
-
   @if (isOpen()) {
-
-    <section
-      class="chat-panel"
-      role="region"
-      aria-label="AI Finance Assistant">
-
+    <section class="chat-panel" role="region" aria-label="AI Finance Assistant">
       <header class="chat-header">
-
         <div class="assistant-identity">
-
-          <div class="assistant-avatar">
-            <mat-icon>smart_toy</mat-icon>
-          </div>
-
+          <div class="assistant-avatar"><mat-icon>smart_toy</mat-icon></div>
           <div class="assistant-details">
-            <strong>AI Finance Assistant</strong>
-            <small>Personal Finance System</small>
+            <strong>AI Assistant</strong><small>Personal Finance System</small>
           </div>
-
         </div>
-
         <button
           type="button"
           class="header-close"
           aria-label="Close AI Assistant"
-          (click)="closeAssistant()">
+          (click)="closeAssistant()"
+        >
           <mat-icon>close</mat-icon>
         </button>
-
       </header>
-
-      <div class="mode-selector">
-
+      <nav class="chat-actions" aria-label="Chat actions">
+        <button type="button" [disabled]="sending()" (click)="newChat()">
+          <mat-icon>add</mat-icon>New Chat
+        </button>
+        <button type="button" [attr.aria-expanded]="showHistory()" (click)="toggleHistory()">
+          <mat-icon>history</mat-icon>History
+        </button>
+      </nav>
+      <div class="mode-selector" aria-label="Conversation mode">
         <button
           type="button"
+          [disabled]="sending()"
           [class.selected]="mode() === 'GENERAL'"
           [attr.aria-pressed]="mode() === 'GENERAL'"
-          (click)="changeMode('GENERAL')">
-
-          <mat-icon>chat_bubble_outline</mat-icon>
+          (click)="changeMode('GENERAL')"
+        >
           General
-
         </button>
-
         <button
           type="button"
+          [disabled]="sending()"
           [class.selected]="mode() === 'FINANCE'"
           [attr.aria-pressed]="mode() === 'FINANCE'"
-          (click)="changeMode('FINANCE')">
-
-          <mat-icon>account_balance_wallet</mat-icon>
+          (click)="changeMode('FINANCE')"
+        >
           Finance
-
         </button>
-
       </div>
-
-      <div class="chat-messages">
-
-        <div class="welcome-state">
-
-          <div class="welcome-avatar">
-            <mat-icon>smart_toy</mat-icon>
-          </div>
-
-          <h3>
-            {{ mode() === 'FINANCE'
-              ? 'Your AI Finance Assistant'
-              : 'Your AI Assistant' }}
-          </h3>
-
-          <p>
-            @if (mode() === 'FINANCE') {
-              Ask about budgeting, saving money,
-              spending analysis, and financial planning.
-            } @else {
-              Ask me general questions or anything
-              you'd like to discuss.
-            }
-          </p>
-
-          <div class="suggestion-list">
-
-            @if (mode() === 'FINANCE') {
-              <span>How can I save more money?</span>
-              <span>Help me create a budget</span>
-              <span>Analyze my spending habits</span>
-            } @else {
-              <span>Explain something to me</span>
-              <span>Help me learn a new topic</span>
-              <span>Give me some ideas</span>
-            }
-
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="chat-footer">
-
-        <div class="message-input">
-
-          <input
-            type="text"
-            placeholder="Backend integration coming next..."
-            aria-label="Message AI Assistant"
-            disabled
-          />
-
-          <button
-            type="button"
-            aria-label="Send message"
-            disabled>
-            <mat-icon>send</mat-icon>
+      @if (showHistory()) {
+        <div class="conversation-history">
+          <h3>Previous conversations</h3>
+          <button type="button" [disabled]="loadingHistory()" (click)="loadConversations()">
+            Refresh history
           </button>
-
+          @if (loadingHistory()) {
+            <p role="status">Loading conversations...</p>
+          }
+          @if (historyError()) {
+            <p role="alert">{{ historyError() }}</p>
+          }
+          @if (!loadingHistory() && !historyError() && conversations().length === 0) {
+            <p>No conversations yet. Start a new chat.</p>
+          }
+          @for (conversation of conversations(); track conversation.id) {
+            <button
+              type="button"
+              class="conversation"
+              [disabled]="sending()"
+              [attr.aria-current]="selected()?.id === conversation.id ? 'true' : null"
+              (click)="selectConversation(conversation)"
+            >
+              <strong>{{ conversation.title }}</strong>
+              <small
+                >{{ conversation.mode }}
+                @if (conversation.month) {
+                  | {{ conversation.month }}/{{ conversation.year }}
+                }
+                | {{ conversation.updatedAt | date: 'MMM d, h:mm a' }}</small
+              >
+            </button>
+          }
+          @if (hasMore()) {
+            <button type="button" [disabled]="loadingHistory()" (click)="loadConversations(true)">
+              Load more
+            </button>
+          }
         </div>
-
-        <small>
-          AI responses will be enabled after API integration.
-        </small>
-
-      </div>
-
+      } @else {
+        @if (mode() === 'FINANCE') {
+          <label class="period"
+            >Financial month
+            <input
+              type="month"
+              min="2000-01"
+              max="2100-12"
+              aria-label="Financial month"
+              [disabled]="!!selected() || busy()"
+              [ngModel]="
+                selected()
+                  ? selected()!.year +
+                    '-' +
+                    (selected()!.month! < 10 ? '0' : '') +
+                    selected()!.month
+                  : period()
+              "
+              (ngModelChange)="period.set($event)"
+            />
+          </label>
+        }
+        @if (selected()) {
+          <div class="conversation-heading">
+            <span>{{ selected()!.title }}</span
+            ><button
+              type="button"
+              [disabled]="busy()"
+              (click)="refreshMessages()"
+              aria-label="Refresh messages"
+            >
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </div>
+        }
+        <div
+          class="chat-messages"
+          #messageArea
+          role="log"
+          aria-label="Chat messages"
+          aria-live="polite"
+          [attr.aria-busy]="busy()"
+        >
+          @if (loading()) {
+            <p role="status">Loading saved messages...</p>
+          }
+          @if (!loading() && messages().length === 0) {
+            <div class="welcome-state">
+              <mat-icon>smart_toy</mat-icon>
+              <h3>
+                {{ mode() === 'FINANCE' ? 'Your AI Finance Assistant' : 'Your AI Assistant' }}
+              </h3>
+              <p>
+                {{
+                  mode() === 'FINANCE'
+                    ? 'Ask about your selected monthly spending, budgets, and savings. Your financial summary is retrieved securely.'
+                    : 'Ask a general question, explore a topic, or get help with an idea.'
+                }}
+              </p>
+              <small>Changing modes starts a new chat.</small>
+            </div>
+          }
+          @for (message of messages(); track message.id) {
+            <article
+              class="message"
+              [class.user]="message.role === 'user'"
+              [class.assistant]="message.role === 'assistant'"
+            >
+              <strong>{{ message.role === 'user' ? 'You' : 'AI Assistant' }}</strong>
+              <p>{{ message.content }}</p>
+              <time [attr.datetime]="message.createdAt">{{
+                message.createdAt | date: 'MMM d, h:mm a'
+              }}</time>
+            </article>
+          }
+          @if (sending()) {
+            <p class="pending" role="status">Waiting for the assistant and saved history...</p>
+          }
+        </div>
+        @if (error()) {
+          <div class="chat-error" role="alert">{{ error() }}</div>
+        }
+        <form class="chat-footer" (ngSubmit)="send()">
+          <div class="message-input">
+            <textarea
+              name="message"
+              rows="2"
+              maxlength="1000"
+              aria-label="Message AI Assistant"
+              placeholder="Type a message..."
+              [disabled]="busy() || needsReconciliation() || !historyReady()"
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
+              (keydown)="onKeydown($event)"
+            ></textarea>
+            <button type="submit" aria-label="Send message" [disabled]="!canSend()">
+              <mat-icon>send</mat-icon>
+            </button>
+          </div>
+          <small>{{ disclaimer() || 'AI can make mistakes. Verify important information.' }}</small>
+        </form>
+      }
     </section>
-
   }
-
   <button
     type="button"
     class="assistant-toggle"
     [attr.aria-expanded]="isOpen()"
-    [attr.aria-label]="isOpen()
-      ? 'Close AI Assistant'
-      : 'Open AI Assistant'"
-    (click)="toggleAssistant()">
-
-    <mat-icon>
-      {{ isOpen() ? 'close' : 'smart_toy' }}
-    </mat-icon>
-
-    @if (!isOpen()) {
-      <span class="assistant-indicator">
-        <mat-icon>chevron_left</mat-icon>
-      </span>
-    }
-
+    [attr.aria-label]="isOpen() ? 'Close AI Assistant' : 'Open AI Assistant'"
+    (click)="toggleAssistant()"
+  >
+    <mat-icon>{{ isOpen() ? 'close' : 'smart_toy' }}</mat-icon>
   </button>
-
 </div>
