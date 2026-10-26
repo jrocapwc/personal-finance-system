@@ -94,7 +94,7 @@ describe('AI Assistant authenticated conversations', () => {
   }
 
   it('opens, closes and preserves the session draft', async () => {
-    fixture.nativeElement.querySelector('[aria-label="Open AI Assistant"]').click();
+    fixture.nativeElement.querySelector('[aria-label="Ask Yaman Ai"]').click();
     await fixture.whenStable();
     expect(fixture.nativeElement.querySelector('.chat-panel')).toBeTruthy();
     chat.draft.set('Draft question');

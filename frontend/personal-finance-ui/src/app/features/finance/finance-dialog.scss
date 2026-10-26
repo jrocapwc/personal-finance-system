@@ -10,7 +10,7 @@ dialog {
   box-shadow: 0 24px 80px #0005;
 }
 dialog::backdrop {
-  background: #08132299;
+  background: var(--overlay-backdrop);
 }
 header {
   display: flex;

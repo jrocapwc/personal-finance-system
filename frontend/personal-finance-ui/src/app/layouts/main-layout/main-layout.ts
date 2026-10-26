@@ -51,7 +51,7 @@ export class MainLayout {
         budgets: 'Budgets',
         dashboard: 'Dashboard',
         'bank-connections': 'Bank Connections',
-      })[this.currentUrl().split('/')[1]?.split('?')[0]] ?? 'FinanceAI',
+      })[this.currentUrl().split('/')[1]?.split('?')[0]] ?? 'YamanTracker',
   );
   private readonly breakpoints = inject(BreakpointObserver);
 

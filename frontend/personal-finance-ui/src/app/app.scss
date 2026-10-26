@@ -2,60 +2,9 @@
   display: block;
   height: 100dvh;
 }
-
-/* All dashboard and Material surfaces inherit these theme tokens. */
 .app-shell {
-  --page-bg: #f6f9fc;
-  --surface: #ffffff;
-  --surface-alt: #f1f5f9;
-  --text-primary: #18283f;
-  --text-secondary: #697b91;
-  --border-color: #e6edf3;
-  --accent: #0aa994;
-  --accent-soft: #d9f7f0;
-  --positive: #009b76;
-  --negative: #e44558;
-  --balance-card: #edfaf6;
-  --income-card: #eef6ff;
-  --expense-card: #fff0f2;
-  --savings-card: #f4f0ff;
-  --chart-grid: #e9eef5;
-  --track-bg: #e5eaf0;
-  --chart-blue: #428df3;
-  --chart-teal: #10bfa5;
-  --chart-yellow: #ffbf40;
-  --chart-orange: #ff8747;
-  --chart-grey: #9aa9b8;
-
   height: 100%;
   position: relative;
   color: var(--text-primary);
   background: var(--page-bg);
-  color-scheme: light;
-}
-
-.app-shell.dark-theme {
-  --page-bg: #0d1725;
-  --surface: #172638;
-  --surface-alt: #213349;
-  --text-primary: #f2f6fc;
-  --text-secondary: #acbad0;
-  --border-color: #304258;
-  --accent: #3ddbc3;
-  --accent-soft: #183d3e;
-  --positive: #40d7aa;
-  --negative: #ff8591;
-  --balance-card: #153a3b;
-  --income-card: #1b3552;
-  --expense-card: #422b3b;
-  --savings-card: #302e4f;
-  --chart-grid: #304258;
-  --track-bg: #3a4b60;
-  --chart-blue: #69a6ff;
-  --chart-teal: #35d3bb;
-  --chart-yellow: #ffd065;
-  --chart-orange: #ff9c67;
-  --chart-grey: #a9b6c6;
-
-  color-scheme: dark;
 }

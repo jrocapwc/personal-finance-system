@@ -84,8 +84,8 @@ input[aria-invalid='true'] {
   min-height: 48px;
   border: 0;
   border-radius: 9px;
-  background: #007f73;
-  color: white;
+  background: var(--color-primary);
+  color: var(--on-primary);
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -100,8 +100,8 @@ input[aria-invalid='true'] {
 .spinner {
   width: 17px;
   height: 17px;
-  border: 2px solid #ffffff66;
-  border-top-color: white;
+  border: 2px solid var(--spinner-track);
+  border-top-color: var(--on-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -127,3 +127,5 @@ a {
   font-weight: 600;
   text-underline-offset: 3px;
 }
+.submit:not(:disabled):hover { background: var(--color-primary-hover); }
+input { border-color: var(--control-border); }

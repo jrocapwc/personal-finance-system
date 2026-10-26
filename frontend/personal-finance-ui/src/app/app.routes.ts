@@ -9,13 +9,13 @@ export const routes: Routes = [
     children: [
       {
         path: 'login',
-        title: 'Sign in | FinanceAI',
+        title: 'Sign in | YamanTracker',
         canActivate: [guestGuard],
         loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
       },
       {
         path: 'register',
-        title: 'Create account | FinanceAI',
+        title: 'Create account | YamanTracker',
         canActivate: [guestGuard],
         loadComponent: () => import('./features/auth/register/register').then((m) => m.Register),
       },
@@ -29,29 +29,29 @@ export const routes: Routes = [
     children: [
       {
         path: 'bank-connections',
-        title: 'Bank Connections | FinanceAI',
+        title: 'Bank Connections | YamanTracker',
         loadComponent: () =>
           import('./features/bank-connections/bank-connections').then((m) => m.BankConnections),
       },
       {
         path: 'dashboard',
-        title: 'Dashboard | FinanceAI',
+        title: 'Dashboard | YamanTracker',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
       {
         path: 'transactions',
-        title: 'Transactions | FinanceAI',
+        title: 'Transactions | YamanTracker',
         loadComponent: () =>
           import('./features/transactions/transactions').then((m) => m.Transactions),
       },
       {
         path: 'categories',
-        title: 'Categories | FinanceAI',
+        title: 'Categories | YamanTracker',
         loadComponent: () => import('./features/categories/categories').then((m) => m.Categories),
       },
       {
         path: 'budgets',
-        title: 'Budgets | FinanceAI',
+        title: 'Budgets | YamanTracker',
         loadComponent: () => import('./features/budgets/budgets').then((m) => m.Budgets),
       },
     ],

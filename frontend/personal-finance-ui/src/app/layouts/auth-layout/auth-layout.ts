@@ -17,9 +17,9 @@ import { ThemeService } from '../../core/services/theme';
     >
       <mat-icon>{{ theme.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
-    <section class="auth-card" aria-label="FinanceAI account">
+    <section class="auth-card" aria-label="YamanTracker account">
       <div class="auth-brand">
-        <mat-icon>account_balance_wallet</mat-icon><strong>FinanceAI</strong>
+        <img src="favicon.svg" width="48" height="48" alt="" /><strong>YamanTracker</strong>
       </div>
       <router-outlet />
     </section>

@@ -106,7 +106,7 @@ input[type='checkbox'] {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  accent-color: #0d9488;
+  accent-color: var(--color-primary);
 }
 .notice {
   padding: 16px;
@@ -116,7 +116,7 @@ input[type='checkbox'] {
   background: var(--surface);
 }
 .error {
-  color: light-dark(#b42318, #ffb4ab);
+  color: var(--negative);
 }
 .table-scroll {
   overflow: auto;
@@ -166,3 +166,4 @@ td select {
     flex-direction: column;
   }
 }
+input:not([type=checkbox]), select { border-color: var(--control-border); }

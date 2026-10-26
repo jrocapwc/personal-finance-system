@@ -36,7 +36,7 @@ export function sixMonths(period: ReportingPeriod): ReportingPeriod[] {
     return { month: (serial % 12) + 1, year: Math.floor(serial / 12) };
   });
 }
-const FALLBACK_COLORS = ['#428df3', '#10bfa5', '#ffbf40', '#ff8747', '#9aa9b8', '#9775fa'];
+const FALLBACK_COLORS = ['var(--chart-orange)', 'var(--chart-tangerine)', 'var(--chart-yellow)', 'var(--chart-red)', 'var(--chart-income)', 'var(--chart-complement)'];
 export function categoryColor(color: string | null, index: number): string {
   return color && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)
     ? color

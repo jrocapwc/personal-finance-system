@@ -1,18 +1,33 @@
-
 @use '@angular/material' as mat;
+@use 'sass:meta';
 
 html {
-  @include mat.theme((
-    color: (
-      primary: mat.$cyan-palette,
-      tertiary: mat.$blue-palette
-    ),
-    typography: Roboto,
-    density: 0
-  ));
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$orange-palette,
+        tertiary: mat.$orange-palette,
+      ),
+      typography: (
+        plain-family: (
+          Roboto,
+          Arial,
+          sans-serif,
+        ),
+        brand-family: (
+          Roboto,
+          Arial,
+          sans-serif,
+        ),
+      ),
+      density: 0,
+    )
+  );
 
   height: 100%;
 }
+
+@include meta.load-css('styles/theme');
 
 html,
 body {
@@ -23,7 +38,8 @@ body {
 
 body {
   font-family: Roboto, Arial, sans-serif;
-  background: #f5f7fb;
+  background: var(--page-bg);
+  color: var(--text-primary);
 }
 
 * {
@@ -31,7 +47,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -41,6 +59,9 @@ button {
 
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid #14b8a6;
+  outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+.mat-mdc-unelevated-button:not(:disabled):hover {
+  background: var(--color-primary-hover);
 }

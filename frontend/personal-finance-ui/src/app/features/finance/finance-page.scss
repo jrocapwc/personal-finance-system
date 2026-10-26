@@ -39,9 +39,9 @@ button:disabled {
   cursor: not-allowed;
 }
 button.primary {
-  background: #007f73;
-  border-color: #007f73;
-  color: white;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--on-primary);
 }
 button.danger {
   color: var(--finance-negative);
@@ -188,10 +188,10 @@ td {
 .progress span {
   display: block;
   height: 100%;
-  background: var(--chart-teal);
+  background: var(--positive);
 }
 .progress .WARNING {
-  background: var(--chart-yellow);
+  background: var(--warning);
 }
 .progress .EXCEEDED {
   background: var(--negative);
@@ -226,3 +226,5 @@ dd {
     grid-template-columns: 1fr;
   }
 }
+button.primary:not(:disabled):hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+input, select, textarea { border-color: var(--control-border); }

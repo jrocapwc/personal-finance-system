@@ -1,0 +1,130 @@
+@use '@angular/material' as mat;
+
+// YamanTracker identity. Brand, financial statuses and chart roles stay separate.
+:root,
+.app-shell {
+  --color-primary: #d04a02;
+  --color-primary-hover: #a83d02;
+  --color-secondary: #eb8c00;
+  --color-accent: #ffb600;
+  --color-danger: #e0301e;
+  --color-charcoal: #2d2d2d;
+  --page-bg: #f7f7f7;
+  --surface: #ffffff;
+  --surface-alt: #f2f2f2;
+  --text-primary: #2d2d2d;
+  --text-secondary: #686868;
+  --border-color: #e5e5e5;
+  --control-border: #858585;
+  --accent: #a83d02;
+  --accent-soft: #fff0e6;
+  --on-primary: #ffffff;
+  --brand-header: #a83d02;
+  --on-brand-header: #ffffff;
+  --positive: #247044;
+  --negative: #b52c1e;
+  --warning: #855600;
+  --balance-card: #fff4e8;
+  --income-card: #edf3fa;
+  --expense-card: #fff0ed;
+  --savings-card: #f6f1e4;
+  --income-icon-bg: #dfeaf7;
+  --expense-icon-bg: #fce0da;
+  --savings-icon-bg: #f3e5bf;
+  --chart-grid: #e5e5e5;
+  --track-bg: #dedede;
+  --chart-income: #285c92;
+  --chart-expense: #d04a02;
+  --chart-orange: #d04a02;
+  --chart-tangerine: #a85b00;
+  --chart-yellow: #976500;
+  --chart-red: #c03022;
+  --chart-grey: #686868;
+  --chart-complement: #6d548d;
+  // Compatibility for existing chart classes; these no longer represent teal branding.
+  --chart-blue: var(--chart-expense);
+  --chart-teal: var(--chart-income);
+  --overlay-backdrop: #1d1d1d99;
+  --shadow-color: #00000026;
+  --spinner-track: #ffffff66;
+  color-scheme: light;
+}
+
+:root.dark-theme,
+.app-shell.dark-theme {
+  --color-primary: #ffad73;
+  --color-primary-hover: #ffc59b;
+  --accent: var(--color-primary);
+  --color-secondary: #ffb44f;
+  --color-accent: #ffd166;
+  --color-danger: #ff9b8c;
+  --page-bg: #191919;
+  --surface: #272727;
+  --surface-alt: #333333;
+  --text-primary: #f7f7f7;
+  --text-secondary: #c1c1c1;
+  --border-color: #494949;
+  --control-border: #8a8a8a;
+  --accent-soft: #482d1f;
+  --on-primary: #351500;
+  --brand-header: #803000;
+  --positive: #8bd3a5;
+  --negative: #ff9b8c;
+  --warning: #ffd166;
+  --balance-card: #382b22;
+  --income-card: #25313c;
+  --expense-card: #3d2926;
+  --savings-card: #373022;
+  --income-icon-bg: #30465c;
+  --expense-icon-bg: #55332b;
+  --savings-icon-bg: #504121;
+  --chart-grid: #494949;
+  --track-bg: #494949;
+  --chart-income: #93bff1;
+  --chart-expense: #ffad73;
+  --chart-orange: #ffad73;
+  --chart-tangerine: #ffb44f;
+  --chart-yellow: #ffd166;
+  --chart-red: #ff9b8c;
+  --chart-grey: #c1c1c1;
+  --chart-complement: #c8ade9;
+  --shadow-color: #00000066;
+  --spinner-track: #35150066;
+  color-scheme: dark;
+}
+
+// Root-scoped tokens also reach CDK overlays mounted outside app-root.
+:root {
+  @include mat.theme-overrides(
+    (
+      primary: var(--color-primary),
+      on-primary: var(--on-primary),
+      primary-container: var(--accent-soft),
+      on-primary-container: var(--text-primary),
+      secondary: var(--color-primary),
+      on-secondary: var(--on-primary),
+      secondary-container: var(--accent-soft),
+      on-secondary-container: var(--text-primary),
+      tertiary: var(--color-secondary),
+      on-tertiary: var(--color-charcoal),
+      tertiary-container: var(--accent-soft),
+      on-tertiary-container: var(--text-primary),
+      surface: var(--surface),
+      surface-container: var(--surface),
+      surface-container-low: var(--surface),
+      surface-container-high: var(--surface-alt),
+      surface-container-highest: var(--surface-alt),
+      surface-container-lowest: var(--surface),
+      surface-bright: var(--surface),
+      surface-dim: var(--surface-alt),
+      on-surface: var(--text-primary),
+      on-surface-variant: var(--text-secondary),
+      outline: var(--control-border),
+      outline-variant: var(--border-color),
+      error: var(--negative),
+      on-error: var(--on-primary),
+      inverse-surface: var(--text-primary),
+      inverse-on-surface: var(--surface),
+    )
+  );
+}

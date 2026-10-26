@@ -103,11 +103,11 @@ describe('Authentication routes and layouts', () => {
     expect(element.textContent).toContain('Income');
     expect(element.textContent).toContain('Recent Transactions');
     const toggle = element.querySelector<HTMLButtonElement>(
-      'button[aria-label="Open AI Assistant"]',
+      'button[aria-label="Ask Yaman Ai"]',
     )!;
     toggle.click();
     harness.detectChanges();
-    expect(element.querySelector('[aria-label="AI Finance Assistant"]')).toBeTruthy();
+    expect(element.querySelector('[aria-label="Ask Yaman Ai"]')).toBeTruthy();
     const general = Array.from(
       element.querySelectorAll<HTMLButtonElement>('.mode-selector button'),
     )[0];

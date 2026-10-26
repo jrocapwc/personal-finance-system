@@ -52,7 +52,7 @@ describe('Dashboard mapping', () => {
     expect(categoryColor('#AbC', 0)).toBe('#AbC');
     expect(categoryColor('#123456', 0)).toBe('#123456');
     for (const color of [null, 'red', 'url(https://example.com)', '<script>', '#1234']) {
-      expect(categoryColor(color, 0)).toBe('#428df3');
+      expect(categoryColor(color, 0)).toBe('var(--chart-orange)');
     }
   });
   it('preserves decimals, negative savings and null savings rate', () => {

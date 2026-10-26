@@ -23,10 +23,10 @@
 .summary-icon { width: 37px; height: 37px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0;
   mat-icon { font-size: 21px; width: 21px; height: 21px; }
 }
-.balance .summary-icon { background: #c8f2e7; color: #009b82; }
-.income .summary-icon { background: #d6eafa; color: #1686e5; }
-.expense .summary-icon { background: #ffdbe0; color: #ea4b5b; }
-.savings .summary-icon { background: #e4dbff; color: #794de2; }
+.balance .summary-icon { background: var(--accent-soft); color: var(--accent); }
+.income .summary-icon { background: var(--income-icon-bg); color: var(--chart-income); }
+.expense .summary-icon { background: var(--expense-icon-bg); color: var(--negative); }
+.savings .summary-icon { background: var(--savings-icon-bg); color: var(--warning); }
 .summary-number { display: block; font-size: clamp(18px, 1.6vw, 25px); margin: 15px 0 9px; letter-spacing: -.5px; overflow-wrap: anywhere; }
 .summary-change { display: flex; align-items: center; gap: 4px; color: var(--positive); font-size: 11px;
   mat-icon { font-size: 14px; height: 14px; width: 14px; }

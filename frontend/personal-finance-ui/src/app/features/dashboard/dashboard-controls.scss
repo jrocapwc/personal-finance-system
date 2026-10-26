@@ -124,10 +124,10 @@
   color: var(--text-secondary);
 }
 .budget-fill.SAFE {
-  background: var(--chart-teal);
+  background: var(--positive);
 }
 .budget-fill.WARNING {
-  background: var(--chart-yellow);
+  background: var(--warning);
 }
 .budget-fill.EXCEEDED {
   background: var(--negative);
@@ -146,3 +146,4 @@
     max-width: 160px;
   }
 }
+.dashboard-controls select, .dashboard-controls input { border-color: var(--control-border); }

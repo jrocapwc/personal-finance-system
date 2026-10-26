@@ -1,17 +1,17 @@
 <div class="assistant-widget">
   @if (isOpen()) {
-    <section class="chat-panel" role="region" aria-label="AI Finance Assistant">
+    <section class="chat-panel" role="region" aria-label="Ask Yaman Ai">
       <header class="chat-header">
         <div class="assistant-identity">
           <div class="assistant-avatar"><mat-icon>smart_toy</mat-icon></div>
           <div class="assistant-details">
-            <strong>AI Assistant</strong><small>Personal Finance System</small>
+            <strong>Ask Yaman Ai</strong><small>YamanTracker</small>
           </div>
         </div>
         <button
           type="button"
           class="header-close"
-          aria-label="Close AI Assistant"
+          aria-label="Close Ask Yaman Ai"
           (click)="closeAssistant()"
         >
           <mat-icon>close</mat-icon>
@@ -134,7 +134,7 @@
             <div class="welcome-state">
               <mat-icon>smart_toy</mat-icon>
               <h3>
-                {{ mode() === 'FINANCE' ? 'Your AI Finance Assistant' : 'Your AI Assistant' }}
+                Ask Yaman Ai
               </h3>
               <p>
                 {{
@@ -152,7 +152,7 @@
               [class.user]="message.role === 'user'"
               [class.assistant]="message.role === 'assistant'"
             >
-              <strong>{{ message.role === 'user' ? 'You' : 'AI Assistant' }}</strong>
+              <strong>{{ message.role === 'user' ? 'You' : 'Ask Yaman Ai' }}</strong>
               <p>{{ message.content }}</p>
               <time [attr.datetime]="message.createdAt">{{
                 message.createdAt | date: 'MMM d, h:mm a'
@@ -172,7 +172,7 @@
               name="message"
               rows="2"
               maxlength="1000"
-              aria-label="Message AI Assistant"
+              aria-label="Message Ask Yaman Ai"
               placeholder="Type a message..."
               [disabled]="busy() || needsReconciliation() || !historyReady()"
               [ngModel]="draft()"
@@ -191,8 +191,9 @@
   <button
     type="button"
     class="assistant-toggle"
+    title="Ask Yaman Ai"
     [attr.aria-expanded]="isOpen()"
-    [attr.aria-label]="isOpen() ? 'Close AI Assistant' : 'Open AI Assistant'"
+    [attr.aria-label]="isOpen() ? 'Close Ask Yaman Ai' : 'Ask Yaman Ai'"
     (click)="toggleAssistant()"
   >
     <mat-icon>{{ isOpen() ? 'close' : 'smart_toy' }}</mat-icon>

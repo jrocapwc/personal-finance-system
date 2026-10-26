@@ -41,7 +41,7 @@
   width: 43px;
   height: 43px;
   border-radius: 12px;
-  background: #08ae9b;
+  background: var(--color-primary);
   color: white;
   display: grid;
   place-items: center;
@@ -193,3 +193,6 @@
     font-size: 15px;
   }
 }
+
+.toolbar-brand { font-size: 13px; font-weight: 700; color: var(--accent); padding-right: 16px; margin-right: 16px; border-right: 1px solid var(--border-color); }
+@media (max-width: 768px) { .toolbar-brand { display: none; } }

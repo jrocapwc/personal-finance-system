@@ -36,12 +36,14 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 .assistant-toggle {
+  transition: background 0.15s ease;
+  border: 2px solid var(--color-primary);
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #0f766e;
-  color: white;
-  box-shadow: 0 7px 25px #0004;
+  background: var(--surface);
+  color: var(--color-primary);
+  box-shadow: 0 7px 25px var(--shadow-color);
   display: grid;
   place-items: center;
 }
@@ -55,7 +57,7 @@ textarea:focus-visible {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 18px;
-  box-shadow: 0 12px 45px #0004;
+  box-shadow: 0 12px 45px var(--shadow-color);
   font-size: 13px;
 }
 .chat-header {
@@ -63,8 +65,8 @@ textarea:focus-visible {
   align-items: center;
   justify-content: space-between;
   padding: 14px;
-  background: #0f766e;
-  color: white;
+  background: var(--brand-header);
+  color: var(--on-brand-header);
 }
 .assistant-identity {
   display: flex;
@@ -72,11 +74,12 @@ textarea:focus-visible {
   gap: 10px;
 }
 .assistant-avatar {
+  color: var(--accent);
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  background: #ffffff26;
+  background: var(--accent-soft);
   border-radius: 12px;
 }
 .assistant-details {
@@ -88,7 +91,7 @@ textarea:focus-visible {
   display: grid;
   place-items: center;
   background: transparent;
-  color: white;
+  color: var(--on-brand-header);
   border: 0;
   width: 40px;
 }
@@ -108,8 +111,8 @@ textarea:focus-visible {
   gap: 6px;
 }
 .mode-selector button.selected {
-  background: #0f766e;
-  color: white;
+  background: var(--color-primary);
+  color: var(--on-primary);
 }
 .period,
 .conversation-heading {
@@ -125,7 +128,7 @@ textarea:focus-visible {
   padding: 6px;
   background: var(--surface-alt);
   color: var(--text-primary);
-  color-scheme: light dark;
+  color-scheme: inherit;
 }
 .conversation-heading span {
   overflow: hidden;
@@ -180,8 +183,8 @@ textarea:focus-visible {
 }
 .message.user {
   align-self: flex-end;
-  background: #0f766e;
-  color: white;
+  background: var(--color-primary);
+  color: var(--on-primary);
 }
 .message time {
   font-size: 10px;
@@ -238,8 +241,8 @@ textarea:focus-visible {
 }
 .message-input button {
   width: 44px;
-  background: #0f766e;
-  color: white;
+  background: var(--color-primary);
+  color: var(--on-primary);
   display: grid;
   place-items: center;
 }
@@ -258,5 +261,21 @@ textarea:focus-visible {
   .chat-panel {
     width: calc(100vw - 24px);
     height: min(650px, calc(100dvh - 100px));
+  }
+}
+.assistant-toggle:hover {
+  background: var(--accent-soft);
+}
+.message-input button:not(:disabled):hover,
+.mode-selector button.selected:not(:disabled):hover {
+  background: var(--color-primary-hover);
+}
+.message-input textarea,
+.period input {
+  border-color: var(--control-border);
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-toggle {
+    transition: none;
   }
 }
