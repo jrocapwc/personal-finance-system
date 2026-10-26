@@ -1,0 +1,16 @@
+Date,Description,Amount,Reference,Currency
+2026-10-01,Monthly Salary,35000.00,demo-csv-202610-001,PHP
+2026-10-02,"Food groceries, weekly shop",-1850.75,demo-csv-202610-002,PHP
+2026-10-03,Transportation fare,-120.00,demo-csv-202610-003,PHP
+2026-10-04,Housing rent,-8000.00,demo-csv-202610-004,PHP
+2026-10-05,Freelance project,2500.50,demo-csv-202610-005,PHP
+2026-10-06,"Food at ""Starbucks""",-245.50,demo-csv-202610-006,PHP
+2026-10-08,Healthcare pharmacy,-675.25,demo-csv-202610-007,PHP
+2026-10-10,Entertainment cinema,-450.00,demo-csv-202610-008,PHP
+2026-10-12,Other household supplies,-320.40,demo-csv-202610-009,PHP
+2026-10-14,Investment Income dividend,850.25,demo-csv-202610-010,PHP
+2026-10-16,Food lunch,-180.00,demo-csv-202610-011,PHP
+2026-10-16,Food lunch,-180.00,demo-csv-202610-012,PHP
+2026-10-19,Transportation fuel,-1200.00,demo-csv-202610-013,PHP
+2026-10-22,Other Income refund,399.99,demo-csv-202610-014,PHP
+2026-10-25,Food groceries,-975.60,demo-csv-202610-015,PHP

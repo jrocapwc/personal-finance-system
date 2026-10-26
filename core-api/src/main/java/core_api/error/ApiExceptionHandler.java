@@ -140,6 +140,15 @@ public class ApiExceptionHandler {
         return error(exception.isTimeout() ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY,
                 exception.isTimeout() ? "INSIGHTS_TIMEOUT" : "INSIGHTS_UNAVAILABLE", exception.getMessage(), request);
     }
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> oversizedStatement(HttpServletRequest request) {
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, "UPLOAD_TOO_LARGE", "Maximum CSV size is 1 MiB", request);
+    }
+    @ExceptionHandler({org.springframework.web.multipart.support.MissingServletRequestPartException.class,
+            org.springframework.validation.BindException.class})
+    ResponseEntity<ApiError> invalidUpload(HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "CSV file or column mapping is missing or invalid", request);
+    }
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
         // Do not log rejected request values, tokens, or database exception messages.

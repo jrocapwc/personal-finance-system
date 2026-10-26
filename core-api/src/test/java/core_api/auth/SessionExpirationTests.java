@@ -31,10 +31,14 @@ class SessionExpirationTests extends JwtTestSupport {
         var user = users.saveAndFlush(new User("Expiration Test", UUID.randomUUID()+"@example.test", "test-hash"));
         var request = HttpRequest.newBuilder(URI.create("http://localhost:"+port+"/api/v1/auth/session"))
                 .header("Cookie", "__Host-finance_session="+tokens.issue(user.getId())).GET().build();
+        var bankRequest = HttpRequest.newBuilder(URI.create("http://localhost:"+port+"/api/v1/bank-connections"))
+                .header("Cookie", "__Host-finance_session="+tokens.issue(user.getId())).GET().build();
         try (var client = HttpClient.newHttpClient()) {
+            assertThat(client.send(bankRequest, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(200);
             assertThat(client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(200);
             when(clock.instant()).thenReturn(issued.plusSeconds(3601));
             assertThat(client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(401);
+            assertThat(client.send(bankRequest, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(401);
         }
     }
 }

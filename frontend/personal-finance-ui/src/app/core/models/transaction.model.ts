@@ -6,7 +6,7 @@ export interface TransactionResponse {
   amount: number;
   description: string | null;
   transactionDate: string;
-  source: 'MANUAL' | 'MOCK_PROVIDER';
+  source: 'MANUAL' | 'MOCK_PROVIDER' | 'CSV_STATEMENT';
   createdAt: string;
   updatedAt: string;
 }

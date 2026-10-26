@@ -28,6 +28,12 @@ export const routes: Routes = [
     loadComponent: () => import('./layouts/main-layout/main-layout').then((m) => m.MainLayout),
     children: [
       {
+        path: 'bank-connections',
+        title: 'Bank Connections | FinanceAI',
+        loadComponent: () =>
+          import('./features/bank-connections/bank-connections').then((m) => m.BankConnections),
+      },
+      {
         path: 'dashboard',
         title: 'Dashboard | FinanceAI',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),

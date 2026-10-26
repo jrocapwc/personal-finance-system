@@ -58,6 +58,15 @@
           <mat-icon matListItemIcon>category</mat-icon>
           <span matListItemTitle>Categories</span>
         </a>
+        <a
+          mat-list-item
+          routerLink="/bank-connections"
+          routerLinkActive="active-link"
+          (click)="closeOnMobile()"
+        >
+          <mat-icon matListItemIcon>sync_alt</mat-icon>
+          <span matListItemTitle>Bank Connections</span>
+        </a>
       </mat-nav-list>
 
       <div class="sidebar-footer">

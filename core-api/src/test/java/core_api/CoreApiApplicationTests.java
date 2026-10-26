@@ -62,7 +62,9 @@ class CoreApiApplicationTests extends JwtTestSupport {
                 "/api/v1/transactions", "/api/v1/transactions/{id}",
                 "/api/v1/budgets", "/api/v1/budgets/{id}", "/api/v1/dashboard", "/api/v1/insights", "/api/v1/chat/messages",
                 "/api/v1/chat/conversations", "/api/v1/chat/conversations/{id}", "/api/v1/chat/conversations/{id}/messages",
-                "/api/v1/transactions/import/mock");
+                "/api/v1/transactions/import/mock", "/api/v1/bank-connections", "/api/v1/bank-connections/demo",
+                "/api/v1/bank-connections/demo/sync", "/api/v1/bank-connections/statements/columns", "/api/v1/bank-connections/statements/preview",
+                "/api/v1/bank-connections/statements/{id}/confirm", "/api/v1/bank-connections/statements/{id}");
         assertThat(JsonPath.<String>read(response.body(), "$.components.securitySchemes.bearerAuth.scheme"))
                 .isEqualTo("bearer");
         assertThat(JsonPath.<String>read(response.body(), "$.components.securitySchemes.bearerAuth.bearerFormat"))

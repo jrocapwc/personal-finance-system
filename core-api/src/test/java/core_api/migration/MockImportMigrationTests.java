@@ -22,7 +22,7 @@ class MockImportMigrationTests {
             }
         }
         var latest = Flyway.configure().dataSource(url, "sa", "").cleanDisabled(true).load();
-        assertThat(latest.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(latest.migrate().migrationsExecuted).isEqualTo(2);
         assertThat(latest.migrate().migrationsExecuted).isZero();
         latest.validate();
         try (var connection = DriverManager.getConnection(url, "sa", ""); var statement = connection.createStatement()) {
@@ -39,7 +39,7 @@ class MockImportMigrationTests {
             assertThatThrownBy(() -> insert(connection, a, 1, "MOCK_PROVIDER", null)).isInstanceOf(SQLException.class);
             assertThatThrownBy(() -> insert(connection, a, 1, "MANUAL", "external-1")).isInstanceOf(SQLException.class);
             assertThatThrownBy(() -> insert(connection, a, 2, "MOCK_PROVIDER", "foreign-category")).isInstanceOf(SQLException.class);
-            assertThat(latest.info().applied()).hasSize(5);
+            assertThat(latest.info().applied()).hasSize(6);
         }
     }
     private void seed(Connection connection, UUID owner, long category) throws SQLException {

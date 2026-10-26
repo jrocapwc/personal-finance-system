@@ -236,3 +236,57 @@ def test_expiration_network_retry_and_intended_destination(browser_context, back
     page.get_by_role("button", name="Sign In", exact=True).click()
     page.wait_for_url("**/budgets")
     expect(page.locator("app-budgets")).to_be_visible()
+
+
+def test_bank_connections_csv_review_themes_and_mobile(browser_context, website):
+    """Real cookie/CSRF browser workflow with fictional statements and isolated H2."""
+    from playwright.sync_api import expect
+    page = browser_context.new_page()
+    register_and_login(page, "Bank Import Browser")
+    page.get_by_role("link", name="Bank Connections").click()
+    expect(page.get_by_role("heading", name="Bank Connections", exact=True)).to_be_visible()
+    expect(page.get_by_text("SIMULATION", exact=True)).to_be_visible()
+    assert page.locator("input[type=password]").count() == 0
+    page.get_by_role("button", name="Connect demo account", exact=True).click()
+    expect(page.get_by_text("Demo connected", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Sync demo transactions", exact=True).click()
+    expect(page.locator('[role=status]').filter(has_text="Import result")).to_contain_text("5 imported")
+    page.get_by_role("button", name="Sync demo transactions", exact=True).click()
+    expect(page.locator('[role=status]').filter(has_text="Import result")).to_contain_text("0 imported")
+    page.get_by_role("button", name="Disconnect", exact=True).click()
+    expect(page.get_by_role("button", name="Connect demo account", exact=True)).to_be_visible()
+    statement = b'Date,Description,Amount,Reference,Currency\n2026-10-15,"Fictional Food, shop",-25.50,qa-food-1,PHP\n2026-02-30,Invalid date,-2.00,qa-invalid,PHP\n2026-10-16,Salary,100.25,qa-salary-1,PHP\n'
+
+    def upload_and_preview():
+        page.locator('input[type=file]').set_input_files({"name": "fictional.csv", "mimeType": "text/csv", "buffer": statement})
+        page.get_by_label("Stable account label", exact=False).fill("fictional-checking")
+        page.get_by_label("I confirm the date order", exact=False).check()
+        page.get_by_role("button", name="Validate and preview", exact=True).click()
+        expect(page.get_by_role("heading", name="Review statement")).to_be_visible()
+
+    upload_and_preview()
+    expect(page.get_by_role("button", name="Confirm selected transactions")).to_be_disabled()
+    expect(page.get_by_label("Include row 2", exact=True)).to_be_disabled()
+    page.get_by_label("Category for row 1", exact=True).select_option(label="Food")
+    page.get_by_label("Category for row 3", exact=True).select_option(label="Salary")
+    expect(page.get_by_role("button", name="Confirm selected transactions")).to_be_enabled()
+    screenshots = ROOT / "core-api/target/qa-bank-screenshots"
+    screenshots.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(screenshots / "light-desktop.png"), full_page=True)
+    page.get_by_role("button", name="Switch to dark mode").click()
+    expect(page.locator(".dark-theme")).to_be_visible()
+    page.screenshot(path=str(screenshots / "dark-desktop.png"), full_page=True)
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.wait_for_timeout(400)
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Page must fit mobile width; preview scrolls internally"
+    page.screenshot(path=str(screenshots / "dark-mobile.png"), full_page=True)
+    page.get_by_role("button", name="Confirm selected transactions").click()
+    expect(page.locator('[role=status]').filter(has_text="Import result")).to_contain_text("2 imported")
+    page.set_viewport_size({"width": 1440, "height": 1000})
+    upload_and_preview()
+    expect(page.get_by_label("Include row 1", exact=True)).to_be_disabled()
+    expect(page.get_by_label("Include row 3", exact=True)).to_be_disabled()
+    page.get_by_role("button", name="Cancel import / change mapping", exact=True).click()
+    expect(page.get_by_role("heading", name="Review statement")).not_to_be_visible()
+    assert page.request.get(website + "/api/v1/transactions?size=100").json()["totalElements"] == 7
+    page.close()

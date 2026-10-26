@@ -78,6 +78,13 @@ public class Transaction {
         return transaction;
     }
 
+    public static Transaction statement(User user, Category category, TransactionRequest request, String externalId) {
+        var transaction = new Transaction(user, category, request);
+        transaction.source = TransactionSource.CSV_STATEMENT;
+        transaction.externalTransactionId = externalId;
+        return transaction;
+    }
+
     public void update(Category category, TransactionRequest request) {
         this.category = category;
         this.type = request.type();

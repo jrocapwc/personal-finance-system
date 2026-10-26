@@ -50,6 +50,7 @@ export class MainLayout {
         categories: 'Categories',
         budgets: 'Budgets',
         dashboard: 'Dashboard',
+        'bank-connections': 'Bank Connections',
       })[this.currentUrl().split('/')[1]?.split('?')[0]] ?? 'FinanceAI',
   );
   private readonly breakpoints = inject(BreakpointObserver);

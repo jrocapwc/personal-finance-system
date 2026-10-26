@@ -1,0 +1,213 @@
+<div class="bank-page">
+  <header>
+    <span class="eyebrow">CONNECTED FINANCES</span>
+    <h1>Bank Connections</h1>
+    <p>Try a simulated bank account or review transactions from your own CSV statement.</p>
+  </header>
+  @if (error()) {
+    <p class="error notice" role="alert">{{ error() }}</p>
+  }
+  @if (result(); as summary) {
+    <div class="notice" role="status">
+      Import result: {{ summary.importedCount }} imported · {{ summary.skippedCount }} skipped
+      (including excluded rows) · {{ summary.failedCount }} failed ·
+      {{ summary.totalProcessed }} processed.
+    </div>
+  }
+  <div class="sections">
+    <section class="card" aria-labelledby="demo-title">
+      <div class="card-heading">
+        <mat-icon>account_balance</mat-icon>
+        <h2 id="demo-title">Connect Demo Bank</h2>
+        <span class="badge">SIMULATION</span>
+      </div>
+      <p>
+        This fictional provider has no connection to a real bank. No banking credentials are needed.
+      </p>
+      @if (connection(); as bank) {
+        <h3>{{ bank.provider }}</h3>
+        <p>{{ bank.accountName }} · {{ bank.maskedAccountNumber }}</p>
+        <span class="badge">{{ bank.connected ? 'Demo connected' : 'Disconnected' }}</span>
+        <div class="balance">
+          <small>Simulated balance · demo data only</small
+          ><strong>PHP {{ bank.demoBalance }}</strong>
+        </div>
+        <p>Last demo sync: {{ bank.lastSync ? (bank.lastSync | date: 'medium') : 'Never' }}</p>
+        <p class="hint">
+          Sync adds fictional transactions to your finance reports. Disconnecting keeps imported
+          transactions.
+        </p>
+        <div class="actions">
+          @if (!bank.connected) {
+            <button mat-flat-button (click)="connect()" [disabled]="busy()">
+              Connect demo account
+            </button>
+          } @else {
+            <button mat-flat-button (click)="sync()" [disabled]="busy()">
+              Sync demo transactions</button
+            ><button mat-stroked-button (click)="disconnect()" [disabled]="busy()">
+              Disconnect
+            </button>
+          }
+        </div>
+      }
+    </section>
+    <section class="card" aria-labelledby="upload-title">
+      <div class="card-heading">
+        <mat-icon>upload_file</mat-icon>
+        <h2 id="upload-title">Upload Bank Statement</h2>
+      </div>
+      <p>
+        UTF-8 CSV · maximum 1 MiB · 1,000 rows · PHP only. Uploading creates a preview; transactions
+        are saved only after confirmation.
+      </p>
+      <p class="hint">
+        Raw files are not saved. Normalized previews expire after 30 minutes and are removed within
+        the following minute. Do not include passwords, PINs, OTPs or access tokens.
+      </p>
+      @if (!preview()) {
+        <label class="file-label"
+          >Choose CSV statement<input
+            type="file"
+            accept=".csv,text/csv"
+            (change)="selectFile($event)"
+            [disabled]="busy()"
+        /></label>
+        @if (headers().length) {
+          <div class="mapping">
+            <label
+              >Stable account label<input
+                [(ngModel)]="mapping['account']"
+                maxlength="40"
+                placeholder="e.g. personal-checking"
+                [disabled]="busy()"
+              /><small
+                >Reuse this label for future exports from the same account. Use an alias, not a real
+                account number.</small
+              ></label
+            >
+            <label
+              >Amount layout<select [(ngModel)]="mode" [disabled]="busy()">
+                <option value="signed">Signed amount (+ income, − expense)</option>
+                <option value="debit-credit">Separate debit / credit</option>
+              </select></label
+            >
+            @for (field of fields; track field[0]) {
+              @if (
+                (field[0] !== 'amount' || mode === 'signed') &&
+                ((field[0] !== 'debit' && field[0] !== 'credit') || mode === 'debit-credit')
+              ) {
+                <label
+                  >{{ field[1]
+                  }}<select [(ngModel)]="mapping[field[0]]" [disabled]="busy()">
+                    <option [ngValue]="-1">Not mapped</option>
+                    @for (header of headers(); track $index) {
+                      <option [ngValue]="$index">{{ $index + 1 }}. {{ header }}</option>
+                    }
+                  </select></label
+                >
+              }
+            }
+            <label
+              >Date order<select
+                [(ngModel)]="mapping['dateFormat']"
+                (ngModelChange)="dateConfirmed = false"
+                [disabled]="busy()"
+              >
+                <option value="ISO">Year-month-day (2026-10-26)</option>
+                <option value="DMY">Day/month/year (26/10/2026)</option>
+                <option value="MDY">Month/day/year (10/26/2026)</option>
+              </select></label
+            >
+          </div>
+          <label class="check"
+            ><input type="checkbox" [(ngModel)]="dateConfirmed" [disabled]="busy()" />I confirm the
+            date order, including ambiguous dates such as 01/02/2026.</label
+          >
+          <p class="hint">
+            Map a unique bank reference to detect overlaps between exports. Without references, only
+            identical files are deduplicated. Review overlapping statements and exclude repeated
+            records yourself. Identical date, amount and description alone do not prove duplication.
+          </p>
+          <button mat-flat-button (click)="buildPreview()" [disabled]="busy() || !dateConfirmed">
+            Validate and preview
+          </button>
+        }
+      } @else {
+        <p>Preview ready below. Cancel to change file or column mappings.</p>
+      }
+    </section>
+  </div>
+  @if (preview(); as statement) {
+    <section class="card preview" aria-labelledby="preview-title">
+      <h2 id="preview-title">Review statement</h2>
+      <p>
+        Expires {{ statement.expiresAt | date: 'shortTime' }}. Choose a category for each included
+        row. Category suggestions require your review; no category is assigned automatically.
+      </p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Statement preview table">
+        <table>
+          <thead>
+            <tr>
+              <th>Include</th>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Type</th>
+              <th>Amount (PHP)</th>
+              <th>Category / suggestion</th>
+              <th>Validation</th>
+              <th>Duplicate</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of statement.rows; track row.rowNumber) {
+              <tr>
+                <td>
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="row.include"
+                    [disabled]="busy() || !!row.validationError || row.duplicate"
+                    [attr.aria-label]="'Include row ' + row.rowNumber"
+                  />
+                </td>
+                <td>{{ row.transactionDate ?? '—' }}</td>
+                <td class="description">{{ row.description ?? '—' }}</td>
+                <td>{{ row.type ?? '—' }}</td>
+                <td>{{ row.amount ?? '—' }}</td>
+                <td>
+                  <small>Suggested: {{ suggestionName(row) }}</small
+                  ><select
+                    [(ngModel)]="row.categoryId"
+                    [disabled]="busy() || !row.include"
+                    [attr.aria-label]="'Category for row ' + row.rowNumber"
+                  >
+                    <option [ngValue]="null">Choose category</option>
+                    @for (category of choices(row); track category.id) {
+                      <option [ngValue]="category.id">{{ category.name }}</option>
+                    }
+                  </select>
+                </td>
+                <td [class.error]="row.validationError">{{ row.validationError ?? 'Valid' }}</td>
+                <td>
+                  {{
+                    row.duplicate ? 'Already imported / repeated reference' : 'No known duplicate'
+                  }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button mat-flat-button (click)="confirm()" [disabled]="busy() || !ready()">
+          Confirm selected transactions</button
+        ><button mat-stroked-button (click)="cancel()" [disabled]="busy()">
+          Cancel import / change mapping
+        </button>
+      </div>
+    </section>
+  }
+  @if (busy()) {
+    <p role="status" aria-live="polite">Processing your request…</p>
+  }
+</div>

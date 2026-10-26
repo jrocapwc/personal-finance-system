@@ -112,7 +112,7 @@
                 <td>{{ categoryName(row.categoryId) }}</td>
                 <td>
                   {{ row.type }}<br /><span class="muted">{{
-                    row.source === 'MANUAL' ? 'Manual' : 'Mock import'
+                    row.source === 'MANUAL' ? 'Manual' : row.source === 'CSV_STATEMENT' ? 'CSV statement' : 'Demo import'
                   }}</span>
                 </td>
                 <td
