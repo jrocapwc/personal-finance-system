@@ -1,0 +1,233 @@
+<section aria-label="Budgets management">
+  <div class="page-heading">
+    <div>
+      <h1>Budgets</h1>
+      <div class="subtitle">Monthly expense limits and live budget utilization.</div>
+    </div>
+    <button type="button" class="primary" (click)="add()">Add Budget</button>
+  </div>
+  <form class="panel filters" [formGroup]="periodForm" (ngSubmit)="applyPeriod()" novalidate>
+    <div class="field">
+      <label for="budget-filter-month">Month</label
+      ><select id="budget-filter-month" formControlName="month">
+        @for (month of monthNames; track $index) {
+          <option [ngValue]="$index + 1">{{ month }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="budget-filter-year">Year</label
+      ><input
+        id="budget-filter-year"
+        type="number"
+        min="2000"
+        max="2100"
+        step="1"
+        formControlName="year"
+      />
+    </div>
+    <button type="submit" class="primary">Load Month</button
+    ><button type="button" (click)="resource.refresh()">Refresh</button>
+    @if (periodForm.invalid) {
+      <p class="error" role="alert">Use a month from 1 to 12 and a year from 2000 to 2100.</p>
+    }
+  </form>
+  <p class="muted">Reporting period: {{ monthNames[period().month - 1] }} {{ period().year }}</p>
+  @if (success()) {
+    <p class="notice success" role="status">{{ success() }}</p>
+  }
+  @if (categoryResource.state().error) {
+    <p class="notice error" role="alert">
+      {{ categoryResource.state().error }}
+      <button type="button" (click)="categoryResource.refresh()">Retry categories</button>
+    </p>
+  }
+  @if (resource.state().loading) {
+    <p class="notice" role="status">Loading budgets...</p>
+  }
+  @if (resource.state().error) {
+    <div class="notice error" role="alert">
+      {{ resource.state().error }} <button type="button" (click)="resource.refresh()">Retry</button>
+    </div>
+  }
+  @if (resource.data()) {
+    <div class="cards">
+      @for (row of rows(); track row.id) {
+        <article class="record-card">
+          <h2>{{ row.label }}</h2>
+          <p class="muted">
+            {{ monthNames[row.month - 1] }} {{ row.year }} &#183; {{ row.budgetStatus }}
+          </p>
+          <div
+            class="progress"
+            role="progressbar"
+            [attr.aria-label]="row.label + ' budget used'"
+            [attr.aria-valuenow]="row.width"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuetext]="row.percentageUsed + '% used, ' + row.budgetStatus"
+          >
+            <span [class]="row.budgetStatus" [style.width.%]="row.width"></span>
+          </div>
+          <dl>
+            <dt>Monthly limit</dt>
+            <dd>{{ row.monthlyLimit | currency: 'PHP' : 'symbol' : '1.2-2' }}</dd>
+            <dt>Spent</dt>
+            <dd>{{ row.spentAmount | currency: 'PHP' : 'symbol' : '1.2-2' }}</dd>
+            <dt>Remaining</dt>
+            <dd [class.debit]="row.remainingAmount < 0">
+              {{ row.remainingAmount | currency: 'PHP' : 'symbol' : '1.2-2' }}
+            </dd>
+            <dt>Used</dt>
+            <dd>{{ row.percentageUsed | number: '1.2-2' }}%</dd>
+            <dt>Alert threshold</dt>
+            <dd>{{ row.alertThreshold }}%</dd>
+          </dl>
+          <div class="actions">
+            <button
+              type="button"
+              (click)="edit(row)"
+              [attr.aria-label]="'Edit budget for ' + row.label"
+            >
+              Edit</button
+            ><button
+              type="button"
+              class="danger"
+              (click)="askDelete(row)"
+              [attr.aria-label]="'Delete budget for ' + row.label"
+            >
+              Delete
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <p class="notice">No budgets set for this month. Add an expense budget to get started.</p>
+      }
+    </div>
+  }
+</section>
+<app-finance-dialog
+  #editor
+  dialogId="budget-editor"
+  [title]="editingId() === null ? 'Add Budget' : 'Edit Budget'"
+  [busy]="busy()"
+>
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (editorError()) {
+      <p class="error" role="alert">{{ editorError() }}</p>
+    }
+    <div class="field">
+      <label for="budget-category">Expense category</label
+      ><select
+        id="budget-category"
+        formControlName="categoryId"
+        autofocus
+        required
+        [attr.aria-invalid]="invalid(form.controls.categoryId)"
+        aria-describedby="budget-category-error"
+      >
+        <option [ngValue]="null">Choose expense category</option>
+        @for (row of categoryResource.data() ?? []; track row.id) {
+          <option [ngValue]="row.id">{{ row.name }}</option>
+        }</select
+      ><span id="budget-category-error" class="error">
+        @if (invalid(form.controls.categoryId)) {
+          Choose an available expense category.
+        }
+      </span>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label for="budget-month">Month</label
+        ><select id="budget-month" formControlName="month">
+          @for (month of monthNames; track $index) {
+            <option [ngValue]="$index + 1">{{ month }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="budget-year">Year</label
+        ><input
+          id="budget-year"
+          type="number"
+          min="2000"
+          max="2100"
+          step="1"
+          formControlName="year"
+          required
+          [attr.aria-invalid]="invalid(form.controls.year)"
+          aria-describedby="budget-year-error"
+        /><span id="budget-year-error" class="error">
+          @if (invalid(form.controls.year)) {
+            Use an integer year from 2000 to 2100.
+          }
+        </span>
+      </div>
+      <div class="field">
+        <label for="budget-limit">Monthly limit (PHP)</label
+        ><input
+          id="budget-limit"
+          type="text"
+          inputmode="decimal"
+          formControlName="monthlyLimit"
+          required
+          [attr.aria-invalid]="invalid(form.controls.monthlyLimit)"
+          aria-describedby="budget-limit-error"
+        /><span id="budget-limit-error" class="error">
+          @if (invalid(form.controls.monthlyLimit)) {
+            Use a positive limit with up to 2 decimal places and at most PHP 1 trillion.
+          }
+        </span>
+      </div>
+      <div class="field">
+        <label for="budget-threshold">Alert threshold (%)</label
+        ><input
+          id="budget-threshold"
+          type="number"
+          min="1"
+          max="99"
+          step="1"
+          formControlName="alertThreshold"
+          required
+          [attr.aria-invalid]="invalid(form.controls.alertThreshold)"
+          aria-describedby="budget-threshold-error"
+        /><span id="budget-threshold-error" class="error">
+          @if (invalid(form.controls.alertThreshold)) {
+            Use an integer from 1 to 99.
+          }
+        </span>
+      </div>
+    </div>
+    @if (!categoryResource.data()?.length) {
+      <p class="hint">
+        Add an expense category on the Categories page first, or retry the category lookup if it
+        failed.
+      </p>
+    }
+    <div class="form-actions">
+      <button type="button" [disabled]="busy()" (click)="editor.close()">Cancel</button
+      ><button
+        type="submit"
+        class="primary"
+        [disabled]="busy() || categoryResource.state().loading"
+      >
+        {{ busy() ? 'Saving...' : 'Save Budget' }}
+      </button>
+    </div>
+  </form>
+</app-finance-dialog>
+<app-finance-dialog #confirmation dialogId="budget-delete" title="Delete Budget" [busy]="busy()">
+  <p>
+    Delete the budget for {{ deleting() ? categoryName(deleting()!.categoryId) : '' }}? Transactions
+    and categories will be kept.
+  </p>
+  @if (deleteError()) {
+    <p class="error" role="alert">{{ deleteError() }}</p>
+  }
+  <div class="form-actions">
+    <button type="button" [disabled]="busy()" (click)="confirmation.close()">Cancel</button
+    ><button type="button" class="danger" [disabled]="busy()" (click)="remove()">
+      {{ busy() ? 'Deleting...' : 'Confirm Delete' }}
+    </button>
+  </div>
+</app-finance-dialog>

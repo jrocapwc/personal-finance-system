@@ -31,6 +31,22 @@ export const routes: Routes = [
         title: 'Dashboard | FinanceAI',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
       },
+      {
+        path: 'transactions',
+        title: 'Transactions | FinanceAI',
+        loadComponent: () =>
+          import('./features/transactions/transactions').then((m) => m.Transactions),
+      },
+      {
+        path: 'categories',
+        title: 'Categories | FinanceAI',
+        loadComponent: () => import('./features/categories/categories').then((m) => m.Categories),
+      },
+      {
+        path: 'budgets',
+        title: 'Budgets | FinanceAI',
+        loadComponent: () => import('./features/budgets/budgets').then((m) => m.Budgets),
+      },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },

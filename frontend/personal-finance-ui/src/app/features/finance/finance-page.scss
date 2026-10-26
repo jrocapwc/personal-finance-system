@@ -1,0 +1,228 @@
+:host {
+  --finance-muted: color-mix(in srgb, var(--text-secondary) 85%, var(--text-primary));
+  --finance-negative: color-mix(in srgb, var(--negative) 80%, var(--text-primary));
+  --finance-positive: color-mix(in srgb, var(--positive) 80%, var(--text-primary));
+  display: block;
+  color: var(--text-primary);
+}
+.page-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+h1 {
+  margin: 0 0 6px;
+  font-size: 27px;
+}
+p {
+  line-height: 1.5;
+}
+.subtitle,
+.muted {
+  color: var(--finance-muted);
+  font-size: 13px;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  color: var(--text-primary);
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+button.primary {
+  background: #007f73;
+  border-color: #007f73;
+  color: white;
+}
+button.danger {
+  color: var(--finance-negative);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.panel,
+.notice {
+  padding: 20px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+  background: var(--surface);
+}
+.filters,
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+.field {
+  display: grid;
+  gap: 7px;
+}
+label,
+.hint {
+  font-size: 12px;
+  color: var(--finance-muted);
+}
+input,
+select,
+textarea {
+  min-width: 0;
+  width: 100%;
+  padding: 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  color: var(--text-primary);
+  font: inherit;
+}
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+input[aria-invalid='true'],
+select[aria-invalid='true'] {
+  border-color: var(--finance-negative);
+}
+.error {
+  color: var(--finance-negative);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.success {
+  color: var(--text-primary);
+  border-inline-start: 3px solid var(--positive);
+}
+form {
+  display: grid;
+  gap: 18px;
+}
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  text-align: left;
+  background: var(--surface-alt);
+  color: var(--finance-muted);
+}
+th,
+td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+td {
+  color: var(--text-primary);
+}
+.amount {
+  white-space: nowrap;
+}
+.credit {
+  color: var(--finance-positive);
+}
+.debit {
+  color: var(--finance-negative);
+}
+.pager {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(290px, 100%), 1fr));
+  gap: 16px;
+}
+.record-card {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+  padding: 20px;
+}
+.record-card h2 {
+  font-size: 17px;
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+.progress {
+  height: 9px;
+  background: var(--track-bg);
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 14px 0;
+}
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--chart-teal);
+}
+.progress .WARNING {
+  background: var(--chart-yellow);
+}
+.progress .EXCEEDED {
+  background: var(--negative);
+}
+dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 13px;
+}
+dt {
+  color: var(--finance-muted);
+}
+dd {
+  margin: 0;
+  text-align: right;
+}
+:where(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (max-width: 620px) {
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .panel {
+    padding: 14px;
+  }
+  .filters,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

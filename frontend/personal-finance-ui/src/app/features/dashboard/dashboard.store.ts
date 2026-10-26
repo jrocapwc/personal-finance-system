@@ -10,6 +10,7 @@ import {
   ReportingPeriod,
 } from '../../core/models/dashboard.model';
 import { AuthService } from '../../core/services/auth';
+import { FinanceChanges } from '../../core/services/finance-changes';
 import { CategoryService } from '../../core/services/category';
 import { DashboardService } from '../../core/services/dashboard';
 import {
@@ -46,6 +47,7 @@ type Result =
 @Injectable()
 export class DashboardStore {
   private readonly auth = inject(AuthService);
+  private readonly changes = inject(FinanceChanges);
   private readonly api = inject(DashboardService);
   private readonly categoryApi = inject(CategoryService);
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -69,6 +71,7 @@ export class DashboardStore {
     owner: this.auth.currentUser(),
     period: this.period(),
     refresh: this.refreshVersion(),
+    financeRevision: this.changes.revision(),
   }));
 
   constructor() {

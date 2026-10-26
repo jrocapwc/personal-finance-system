@@ -7,3 +7,9 @@ export interface CategoryResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CategoryRequest {
+  name: string;
+  type: CategoryType;
+  color: string | null;
+}

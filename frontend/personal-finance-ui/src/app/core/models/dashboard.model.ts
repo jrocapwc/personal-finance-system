@@ -1,4 +1,7 @@
-import { CategoryType } from './category.model';
+import { TransactionResponse } from './transaction.model';
+import { BudgetResponse } from './budget.model';
+export type { TransactionResponse } from './transaction.model';
+export type { BudgetResponse, BudgetStatus } from './budget.model';
 export interface ReportingPeriod {
   month: number;
   year: number;
@@ -20,32 +23,6 @@ export interface CategoryBreakdown {
 export interface DailyTrend {
   date: string;
   amount: number;
-}
-export interface TransactionResponse {
-  id: number;
-  categoryId: number;
-  type: CategoryType;
-  amount: number;
-  description: string | null;
-  transactionDate: string;
-  source: 'MANUAL' | 'MOCK_PROVIDER';
-  createdAt: string;
-  updatedAt: string;
-}
-export type BudgetStatus = 'SAFE' | 'WARNING' | 'EXCEEDED';
-export interface BudgetResponse {
-  id: number;
-  categoryId: number;
-  month: number;
-  year: number;
-  monthlyLimit: number;
-  alertThreshold: number;
-  spentAmount: number;
-  remainingAmount: number;
-  percentageUsed: number;
-  budgetStatus: BudgetStatus;
-  createdAt: string;
-  updatedAt: string;
 }
 export interface DashboardResponse extends ReportingPeriod {
   summary: FinancialSummary;

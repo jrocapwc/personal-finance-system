@@ -70,13 +70,16 @@ describe('Authentication routes and layouts', () => {
     await fixture.whenStable();
     expect(TestBed.inject(ThemeService).isDarkMode()).toBe(true);
   });
-  it.each(['/dashboard', '/', '/unknown'])('redirects unauthenticated %s to login', async (url) => {
-    const harness = await RouterTestingHarness.create(url);
-    expect(TestBed.inject(Router).url).toBe('/login');
-    expect(harness.routeNativeElement?.querySelector('app-login')).toBeTruthy();
-    expect(harness.routeNativeElement?.querySelector('.sidebar')).toBeNull();
-    expect(harness.routeNativeElement?.querySelector('app-ai-assistant')).toBeNull();
-  });
+  it.each(['/dashboard', '/categories', '/transactions', '/budgets', '/', '/unknown'])(
+    'redirects unauthenticated %s to login',
+    async (url) => {
+      const harness = await RouterTestingHarness.create(url);
+      expect(TestBed.inject(Router).url).toBe('/login');
+      expect(harness.routeNativeElement?.querySelector('app-login')).toBeTruthy();
+      expect(harness.routeNativeElement?.querySelector('.sidebar')).toBeNull();
+      expect(harness.routeNativeElement?.querySelector('app-ai-assistant')).toBeNull();
+    },
+  );
   it('register is public and has no dashboard layout', async () => {
     const harness = await RouterTestingHarness.create('/register');
     expect(harness.routeNativeElement?.querySelector('app-register')).toBeTruthy();

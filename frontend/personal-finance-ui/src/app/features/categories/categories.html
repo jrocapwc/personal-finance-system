@@ -1,0 +1,134 @@
+<section aria-label="Categories management">
+  <div class="page-heading">
+    <div>
+      <h1>Categories</h1>
+      <div class="subtitle">Organize your income and expenses.</div>
+    </div>
+    <button type="button" class="primary" (click)="add()">Add Category</button>
+  </div>
+  <div class="panel filters">
+    <div class="field">
+      <label for="category-filter">Type</label
+      ><select
+        id="category-filter"
+        [value]="type()"
+        (change)="setFilter($any($event.target).value)"
+      >
+        <option value="">All types</option>
+        <option value="INCOME">Income</option>
+        <option value="EXPENSE">Expense</option>
+      </select>
+    </div>
+    <button type="button" (click)="resource.refresh()">Refresh</button>
+  </div>
+  @if (success()) {
+    <p class="notice success" role="status">{{ success() }}</p>
+  }
+  @if (resource.state().loading) {
+    <p class="notice" role="status">Loading categories...</p>
+  }
+  @if (resource.state().error) {
+    <div class="notice error" role="alert">
+      {{ resource.state().error }} <button type="button" (click)="resource.refresh()">Retry</button>
+    </div>
+  }
+  @if (resource.data(); as rows) {
+    <div class="cards">
+      @for (row of rows; track row.id) {
+        <article class="record-card">
+          <h2><span class="swatch" [style.background]="color(row.color)"></span>{{ row.name }}</h2>
+          <p class="muted">{{ row.type }} &#183; {{ row.color || 'Default color' }}</p>
+          <div class="actions">
+            <button type="button" (click)="edit(row)" [attr.aria-label]="'Edit ' + row.name">
+              Edit</button
+            ><button
+              type="button"
+              class="danger"
+              (click)="askDelete(row)"
+              [attr.aria-label]="'Delete ' + row.name"
+            >
+              Delete
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <p class="notice">No categories match this filter. Add a category to get started.</p>
+      }
+    </div>
+  }
+</section>
+<app-finance-dialog
+  #editor
+  dialogId="category-editor"
+  [title]="editingId() === null ? 'Add Category' : 'Edit Category'"
+  [busy]="busy()"
+>
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (editorError()) {
+      <p class="error" role="alert">{{ editorError() }}</p>
+    }
+    <div class="field">
+      <label for="category-name">Name</label
+      ><input
+        id="category-name"
+        formControlName="name"
+        maxlength="100"
+        required
+        autofocus
+        [attr.aria-invalid]="invalid(form.controls.name)"
+        aria-describedby="category-name-error"
+      /><span id="category-name-error" class="error">
+        @if (invalid(form.controls.name)) {
+          Enter a name, up to 100 characters.
+        }
+      </span>
+    </div>
+    <div class="field">
+      <label for="category-type">Type</label
+      ><select id="category-type" formControlName="type">
+        <option value="INCOME">Income</option>
+        <option value="EXPENSE">Expense</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="category-color">Color (optional)</label
+      ><input
+        id="category-color"
+        formControlName="color"
+        placeholder="#14b8a6"
+        [attr.aria-invalid]="invalid(form.controls.color)"
+        aria-describedby="category-color-error"
+      /><span id="category-color-error" class="error">
+        @if (invalid(form.controls.color)) {
+          Use #RGB or #RRGGBB, or leave blank.
+        }
+      </span>
+    </div>
+    <div class="form-actions">
+      <button type="button" [disabled]="busy()" (click)="editor.close()">Cancel</button
+      ><button class="primary" type="submit" [disabled]="busy()">
+        {{ busy() ? 'Saving...' : 'Save Category' }}
+      </button>
+    </div>
+  </form>
+</app-finance-dialog>
+<app-finance-dialog
+  #confirmation
+  dialogId="category-delete"
+  title="Delete Category"
+  [busy]="busy()"
+>
+  <p>
+    Delete {{ deleting()?.name }}? Categories used by transactions or budgets cannot be deleted.
+    Deleted default categories are not automatically recreated.
+  </p>
+  @if (deleteError()) {
+    <p class="error" role="alert">{{ deleteError() }}</p>
+  }
+  <div class="form-actions">
+    <button type="button" [disabled]="busy()" (click)="confirmation.close()">Cancel</button
+    ><button type="button" class="danger" [disabled]="busy()" (click)="remove()">
+      {{ busy() ? 'Deleting...' : 'Confirm Delete' }}
+    </button>
+  </div>
+</app-finance-dialog>

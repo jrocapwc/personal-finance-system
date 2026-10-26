@@ -1,11 +1,11 @@
-import { Component, inject, ViewChild } from '@angular/core';
+import { Component, computed, inject, ViewChild } from '@angular/core';
 
 import { ThemeService } from '../../core/services/theme';
 import { AuthService } from '../../core/services/auth';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
+import { filter, map } from 'rxjs';
 
 import { MatSidenav, MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -35,6 +35,23 @@ import { AiAssistant } from '../../shared/components/ai-assistant/ai-assistant';
 export class MainLayout {
   readonly theme = inject(ThemeService);
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map(() => this.router.url),
+    ),
+    { initialValue: this.router.url },
+  );
+  readonly pageTitle = computed(
+    () =>
+      ({
+        transactions: 'Transactions',
+        categories: 'Categories',
+        budgets: 'Budgets',
+        dashboard: 'Dashboard',
+      })[this.currentUrl().split('/')[1]?.split('?')[0]] ?? 'FinanceAI',
+  );
   private readonly breakpoints = inject(BreakpointObserver);
 
   @ViewChild('drawer') drawer?: MatSidenav;

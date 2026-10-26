@@ -1,0 +1,283 @@
+<section aria-label="Transactions management">
+  <div class="page-heading">
+    <div>
+      <h1>Transactions</h1>
+      <div class="subtitle">Track your income and expenses.</div>
+    </div>
+    <button type="button" class="primary" (click)="add()">Add Transaction</button>
+  </div>
+  <form class="panel" [formGroup]="filters" (ngSubmit)="apply()" novalidate>
+    <div class="filters">
+      <div class="field">
+        <label for="filter-type">Type</label
+        ><select id="filter-type" formControlName="type">
+          <option value="">All types</option>
+          <option value="INCOME">Income</option>
+          <option value="EXPENSE">Expense</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-category">Category</label
+        ><select id="filter-category" formControlName="categoryId">
+          <option [ngValue]="null">All categories</option>
+          @for (row of filterCategories(); track row.id) {
+            <option [ngValue]="row.id">{{ row.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-start">Start date</label
+        ><input id="filter-start" type="date" formControlName="startDate" />
+      </div>
+      <div class="field">
+        <label for="filter-end">End date</label
+        ><input id="filter-end" type="date" formControlName="endDate" />
+      </div>
+      <div class="field">
+        <label for="filter-keyword">Description keyword</label
+        ><input id="filter-keyword" formControlName="keyword" maxlength="255" />
+      </div>
+      <div class="field">
+        <label for="filter-sort">Sort by</label
+        ><select id="filter-sort" formControlName="sort">
+          @for (field of sortFields; track field) {
+            <option [value]="field">{{ sortLabels[field] }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-direction">Direction</label
+        ><select id="filter-direction" formControlName="direction">
+          <option value="DESC">Descending</option>
+          <option value="ASC">Ascending</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="filter-size">Rows per page</label
+        ><select id="filter-size" formControlName="size">
+          @for (size of [10, 20, 50, 100]; track size) {
+            <option [ngValue]="size">{{ size }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    @if (filters.controls.startDate.invalid || filters.controls.endDate.invalid) {
+      <p class="error" role="alert">Choose valid calendar dates.</p>
+    }
+    @if (filters.hasError('dateRange')) {
+      <p class="error" role="alert">Start date must not be after end date.</p>
+    }
+    <div class="actions">
+      <button type="submit" class="primary">Apply Filters</button
+      ><button type="button" (click)="clearFilters()">Clear</button
+      ><button type="button" (click)="resource.refresh()">Refresh</button>
+    </div>
+  </form>
+  @if (success()) {
+    <p class="notice success" role="status">{{ success() }}</p>
+  }
+  @if (categoryResource.state().error) {
+    <p class="notice error" role="alert">
+      {{ categoryResource.state().error }}
+      <button type="button" (click)="categoryResource.refresh()">Retry categories</button>
+    </p>
+  }
+  @if (resource.state().loading) {
+    <p class="notice" role="status">Loading transactions...</p>
+  }
+  @if (resource.state().error) {
+    <div class="notice error" role="alert">
+      {{ resource.state().error }} <button type="button" (click)="resource.refresh()">Retry</button>
+    </div>
+  }
+  @if (resource.data(); as data) {
+    <div class="panel">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Description</th>
+              <th scope="col">Category</th>
+              <th scope="col">Type / Source</th>
+              <th scope="col">Amount</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of data.content; track row.id) {
+              <tr>
+                <td>{{ row.transactionDate + 'T00:00:00Z' | date: 'MMM d, y' : 'UTC' }}</td>
+                <td>{{ row.description || 'No description' }}</td>
+                <td>{{ categoryName(row.categoryId) }}</td>
+                <td>
+                  {{ row.type }}<br /><span class="muted">{{
+                    row.source === 'MANUAL' ? 'Manual' : 'Mock import'
+                  }}</span>
+                </td>
+                <td
+                  class="amount"
+                  [class.credit]="row.type === 'INCOME'"
+                  [class.debit]="row.type === 'EXPENSE'"
+                >
+                  {{
+                    (row.type === 'EXPENSE' ? -row.amount : row.amount)
+                      | currency: 'PHP' : 'symbol' : '1.2-2'
+                  }}
+                </td>
+                <td>
+                  <div class="actions">
+                    <button
+                      type="button"
+                      (click)="edit(row)"
+                      [attr.aria-label]="'Edit transaction ' + row.id"
+                    >
+                      Edit</button
+                    ><button
+                      type="button"
+                      class="danger"
+                      (click)="askDelete(row)"
+                      [attr.aria-label]="'Delete transaction ' + row.id"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">No transactions match your filters.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span
+          >{{ data.totalElements }} transactions &#183; Page
+          {{ data.totalPages ? data.page + 1 : 0 }} of {{ data.totalPages }}</span
+        >
+        <div class="actions">
+          <button type="button" [disabled]="data.first" (click)="changePage(-1)">Previous</button
+          ><button type="button" [disabled]="data.last" (click)="changePage(1)">Next</button>
+        </div>
+      </div>
+    </div>
+  }
+</section>
+<app-finance-dialog
+  #editor
+  dialogId="transaction-editor"
+  [title]="editingId() === null ? 'Add Transaction' : 'Edit Transaction'"
+  [busy]="busy()"
+>
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (editorError()) {
+      <p class="error" role="alert">{{ editorError() }}</p>
+    }
+    <div class="form-grid">
+      <div class="field">
+        <label for="transaction-type">Type</label
+        ><select id="transaction-type" formControlName="type" autofocus>
+          <option value="INCOME">Income</option>
+          <option value="EXPENSE">Expense</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="transaction-category">Category</label
+        ><select
+          id="transaction-category"
+          formControlName="categoryId"
+          required
+          [attr.aria-invalid]="invalid(form.controls.categoryId)"
+          aria-describedby="transaction-category-error"
+        >
+          <option [ngValue]="null">Choose category</option>
+          @for (row of formCategories(); track row.id) {
+            <option [ngValue]="row.id">{{ row.name }}</option>
+          }</select
+        ><span class="error" id="transaction-category-error">
+          @if (invalid(form.controls.categoryId)) {
+            Choose an available category matching the type.
+          }
+        </span>
+      </div>
+      <div class="field">
+        <label for="transaction-amount">Amount (PHP)</label
+        ><input
+          id="transaction-amount"
+          type="text"
+          inputmode="decimal"
+          formControlName="amount"
+          required
+          [attr.aria-invalid]="invalid(form.controls.amount)"
+          aria-describedby="transaction-amount-error"
+        /><span class="error" id="transaction-amount-error">
+          @if (invalid(form.controls.amount)) {
+            Use a positive amount with up to 2 decimal places and at most PHP 1 trillion.
+          }
+        </span>
+      </div>
+      <div class="field">
+        <label for="transaction-date">Date</label
+        ><input
+          id="transaction-date"
+          type="date"
+          formControlName="transactionDate"
+          required
+          [attr.aria-invalid]="invalid(form.controls.transactionDate)"
+          aria-describedby="transaction-date-error"
+        /><span class="error" id="transaction-date-error">
+          @if (invalid(form.controls.transactionDate)) {
+            Choose a valid calendar date (YYYY-MM-DD).
+          }
+        </span>
+      </div>
+    </div>
+    <div class="field">
+      <label for="transaction-description">Description (optional)</label
+      ><textarea
+        id="transaction-description"
+        formControlName="description"
+        maxlength="255"
+      ></textarea>
+    </div>
+    @if (categoryResource.state().error) {
+      <p class="error">
+        Categories are unavailable. Close this form and retry the category lookup.
+      </p>
+    } @else if (!formCategories().length) {
+      <p class="hint">No categories of this type. Add one on the Categories page first.</p>
+    }
+    <div class="form-actions">
+      <button type="button" [disabled]="busy()" (click)="editor.close()">Cancel</button
+      ><button
+        class="primary"
+        type="submit"
+        [disabled]="busy() || categoryResource.state().loading"
+      >
+        {{ busy() ? 'Saving...' : 'Save Transaction' }}
+      </button>
+    </div>
+  </form>
+</app-finance-dialog>
+<app-finance-dialog
+  #confirmation
+  dialogId="transaction-delete"
+  title="Delete Transaction"
+  [busy]="busy()"
+>
+  <p>
+    Delete transaction #{{ deleting()?.id }}? Financial reports and budget utilization will be
+    refreshed.
+  </p>
+  @if (deleteError()) {
+    <p class="error" role="alert">{{ deleteError() }}</p>
+  }
+  <div class="form-actions">
+    <button type="button" [disabled]="busy()" (click)="confirmation.close()">Cancel</button
+    ><button type="button" class="danger" [disabled]="busy()" (click)="remove()">
+      {{ busy() ? 'Deleting...' : 'Confirm Delete' }}
+    </button>
+  </div>
+</app-finance-dialog>

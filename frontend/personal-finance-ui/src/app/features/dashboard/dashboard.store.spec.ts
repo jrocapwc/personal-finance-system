@@ -8,6 +8,7 @@ import {
 } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
 import { DashboardStore } from './dashboard.store';
+import { FinanceChanges } from '../../core/services/finance-changes';
 import { AuthService } from '../../core/services/auth';
 import { authInterceptor } from '../../core/interceptors/auth.interceptor';
 import { testCredentials, testLogin, testUser } from '../../core/auth.testing';
@@ -30,7 +31,13 @@ describe('DashboardStore', () => {
     http = TestBed.inject(HttpTestingController);
     vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
   });
-  afterEach(() => { try { http.verify({ ignoreCancelled: true }); } finally { TestBed.resetTestingModule(); } });
+  afterEach(() => {
+    try {
+      http.verify({ ignoreCancelled: true });
+    } finally {
+      TestBed.resetTestingModule();
+    }
+  });
   function start() {
     TestBed.inject(AuthService).login(testCredentials).subscribe();
     http.expectOne('/api/v1/auth/login').flush({ ...testLogin, user: { ...testUser } });
@@ -199,7 +206,11 @@ describe('DashboardStore', () => {
     old.flush(populatedDashboard(selected));
     expect(store.data()).toBeNull();
     TestBed.tick();
-    expect(http.match(request => request.url === '/api/v1/dashboard').every(request => request.cancelled)).toBe(true);
+    expect(
+      http
+        .match((request) => request.url === '/api/v1/dashboard')
+        .every((request) => request.cancelled),
+    ).toBe(true);
   });
   it('does not reuse private data after another login session', () => {
     start();
@@ -237,6 +248,19 @@ describe('DashboardStore', () => {
     expect(requests).toHaveLength(1);
     requests[0].flush(emptyDashboard({ month: 1, year: 2000 }));
     expect(store.state().history.filter((row) => row.status === 'unsupported')).toHaveLength(5);
+  });
+  it('reloads all six reports and category names after finance mutations', () => {
+    start();
+    current().flush(populatedDashboard(selected));
+    http.expectOne('/api/v1/categories').flush([]);
+    finishHistory();
+    TestBed.inject(FinanceChanges).track()();
+    TestBed.tick();
+    const reports = http.match((request) => request.url === '/api/v1/dashboard');
+    expect(reports).toHaveLength(6);
+    for (const request of reports) request.flush(emptyDashboard(period(request)));
+    http.expectOne('/api/v1/categories').flush([]);
+    expect(store.data()?.summary.totalIncome).toBe(0);
   });
   it('cancels pending finance requests when the feature is destroyed', () => {
     start();

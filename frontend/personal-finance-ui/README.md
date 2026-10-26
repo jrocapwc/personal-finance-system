@@ -1,5 +1,198 @@
 # FinanceAI Angular frontend
 
+## Milestone 8C.5 - Finance management CRUD
+
+The actual workspace is `frontend/personal-finance-ui` (the directory containing `angular.json`).
+Before implementation, the existing live-dashboard services, store, Java contracts and test
+coverage were inspected. Its baseline suite ran successfully: 85 tests across 8 files. Live
+reporting was already connected, so no prerequisite dashboard implementation was needed.
+
+### Implemented pages and navigation
+
+- **Categories**: responsive cards, INCOME/EXPENSE filter, add/edit forms, optional hex color,
+  confirmation before delete, duplicate-name and referenced-category conflict messages.
+- **Transactions**: table, positive decimal inputs, signed PHP display, add/edit/confirmed delete,
+  matching type/category selection, inclusive date filters, keyword search, backend-supported
+  sorting and zero-based pagination. UI page sizes are 10, 20, 50 and 100. Filters reset the page;
+  deleting the last row of a page moves back to a valid page when necessary.
+- **Budgets**: month/year selection, expense categories only, add/edit/confirmed delete, monthly
+  limit, spent/remaining amounts, alert threshold and SAFE/WARNING/EXCEEDED status. The backend's
+  actual usage is displayed, including >100% and negative remaining money. Only bar width and
+  numeric ARIA range are clamped; ARIA value text retains the real percentage.
+- All features are lazy-loaded inside the existing guarded Option A shell. Sidebar links and
+  toolbar titles reflect the active feature. The same floating AI Assistant instance and mode
+  survive navigation. Existing authentication, JWT interceptor, theme preference and dashboard
+  styling were preserved. No new dependencies or backend changes were required.
+
+### API contracts and refresh
+
+All paths are relative `/api/v1/...`; the existing interceptor attaches the JWT. No request
+accepts a userId or sends ownership/calculated fields.
+
+| Service | Existing operations used/supported |
+| --- | --- |
+| `CategoryService` | GET `/categories` with optional `type`, POST `/categories`, PUT/DELETE `/categories/{id}` |
+| `TransactionService` | GET/POST `/transactions`, GET/PUT/DELETE `/transactions/{id}` |
+| `BudgetService` | GET `/budgets?month=...&year=...`, POST `/budgets`, GET/PUT/DELETE `/budgets/{id}` |
+
+There is no category GET-by-ID call. Editors use complete list response records. PUT bodies
+contain every mutable request field; empty optional description/color values are sent as null.
+DELETE handles the backend's HTTP 204 response. Transaction list calls use only `type`,
+`categoryId`, `startDate`, `endDate`, `keyword`, `page`, `size`, `sort` and `direction`.
+
+Transaction and budget response interfaces were extracted from `dashboard.model.ts` into
+reusable model files; compatibility type re-exports preserve existing dashboard imports.
+Request interfaces and the actual `TransactionPageResponse` envelope were added. Java Long IDs
+and BigDecimal values arrive as JSON numbers; dates and timestamps retain the Java DTO formats.
+
+Successful mutations emit a data-free `FinanceChanges` revision scoped to the initiating auth
+session. Active management resources reload their lists/lookups, and the dashboard reloads
+its selected report, six-month history and category labels. This includes budget utilization
+after transaction changes, renamed categories, and transactions moved between periods.
+Inactive routes hold no finance cache and load fresh data on the next visit. Totals are always
+calculated by Spring Boot, never approximated from a paginated frontend list.
+
+### Forms, errors and isolation
+
+- Reactive Forms validate nonblank names up to 100 characters; optional #RGB/#RRGGBB colors;
+  positive amounts with at most two decimal places; real YYYY-MM-DD dates; descriptions and
+  keywords up to 255 characters; ordered filter dates; month 1-12; year 2000-2100; and integer
+  alert thresholds 1-99. Type changes clear incompatible transaction category selections.
+- Failed mutations preserve form values. Busy controls and handler checks prevent duplicate
+  submissions. 409 errors distinguish duplicate categories, duplicate monthly budgets and
+  referenced-category restrictions. Network, validation, unavailable-record and permission
+  errors use understandable messages. Empty and failed loads remain distinct; no mock fallback.
+- Component-scoped resources use signals and switchMap, cancel stale requests, and reject
+  responses racing query/session changes. Logout hides lists immediately, clears forms/dialogs,
+  cancels pending reads/writes and prevents old-session completion notifications. Same-user
+  login replacement also starts a fresh resource load. The global change counter stores no
+  records, tokens or user IDs. Authenticated reads are disabled during SSR and transfer caching.
+- Native modal dialogs inherit the existing theme variables, including dark controls and
+  surfaces. The browser supplies modal focus containment, Escape and focus restoration;
+  closing/canceling is disabled while a save/delete is pending. Forms have semantic labels,
+  field descriptions and visible keyboard focus. Tables scroll within the page on mobile.
+
+### Numeric limits
+
+The existing JSON-number transport is retained. New services reject non-safe-integer IDs before
+use and reject unsafe IDs in responses instead of rounding/truncating them. Money is bounded
+to +/-PHP 1 trillion for display, with positive request amounts and at most two decimal places,
+consistent with the prior dashboard's conservative range. The backend accepts up to 17 integer
+digits, so its full decimal/Long range is intentionally not supported by this frontend; values
+outside the safe range show an explicit error. Full-range support would need a separately
+reviewed lossless numeric transport/parser. No silent rounding or frontend financial aggregation
+is used to work around these limits.
+
+### Verification - October 26, 2026
+
+```powershell
+npm test -- --watch=false
+npm run build
+```
+
+- Final Angular suite: **174 tests passed across 14 files**.
+- Production build: **passed**, with all three lazy feature chunks and six prerendered routes.
+- The existing `dashboard.scss` warning remains at 6.50 kB against the 4 kB warning budget,
+  below the 8 kB error budget. Build budgets were not raised.
+- Unit/integration checks cover CRUD DTOs and JWT headers, category filters/restrictions,
+  complete PUTs, 204 deletes, transaction queries/pagination, type/category consistency,
+  money/date/threshold validation, duplicate conflicts, >100% budget use, safe numeric handling,
+  stale-response cancellation, logout/same-user session isolation, SSR suppression, guarded
+  routes, active dashboard invalidation, theme compatibility and existing AI/dashboard regressions.
+- Headless Chrome passed the full CRUD flow against Spring Boot, including real duplicate and
+  in-use 409 responses, pagination with more than 20 rows, moving transactions/budgets between
+  months and verifying recalculated backend totals, confirmations, dark/mobile dialogs,
+  autofocus/Tab/Escape/focus restoration, same AI widget/mode across routes, an empty second
+  account and reload requiring login. No browser runtime/hydration errors occurred. Desktop and
+  mobile screenshots were inspected.
+- The final browser run used the existing Spring jar with Java 25, a temporary signing key and
+  a confirmed isolated in-memory H2 database on port 18080, plus Angular on 4300 using a temporary
+  proxy file. Repository proxy settings remain unchanged. Dedicated test servers were stopped.
+- Test footprint: the first successful browser run reached an already-running backend on 8080
+  because the attempted test instance could not bind that port. All custom test transactions,
+  budgets and categories were removed, including 24 verified pagination fixtures. Two disposable
+  accounts named `CRUD Browser Test` and `Other Browser Test`, with their default categories,
+  remain there because no user-deletion endpoint exists. Existing users' finance records were
+  not changed. The isolated repeat's database was discarded with its process.
+
+### Manual verification checklist
+
+1. Run Spring Boot and Angular using the setup instructions below. Sign in and open Categories,
+   Transactions and Budgets through the sidebar. Check the toolbar title and active link.
+2. Create/edit a category, including clearing its color. Check Income/Expense filtering. Try a
+   duplicate name/type and confirm the error preserves the form.
+3. Create an expense transaction with two decimal places. Change its type and verify categories
+   reset/filter correctly. Reject zero/negative/excess-precision amounts and invalid dates.
+4. Apply type/category/date/keyword filters and both sort directions. Navigate multiple pages,
+   change page size and clear filters. Dates and PHP amounts must display correctly.
+5. Create an expense budget. Try a duplicate category/month/year. Check threshold validation,
+   SAFE/WARNING/EXCEEDED, >100% use, clamped bars and negative remaining amounts.
+6. Rename a referenced category and inspect labels on transactions, budgets and dashboard.
+   Attempt deletion/type change while referenced and confirm the restriction message.
+7. Move a transaction to another month/category and inspect both affected monthly reports and
+   budget utilization. Edit a budget's period and verify its new month's actual spending.
+8. Confirm then delete a transaction, budget and finally its unreferenced category. Ensure Cancel
+   sends no DELETE. Deleting the final transaction on a later page must recover to a valid page.
+9. Stop API connectivity and try a load/save. Check Retry, no fabricated records, and retained
+   form values after a failed save. Restore connectivity and retry.
+10. Switch themes and test narrow screens on every page and dialog. Check autofocus, Tab, Escape,
+    Cancel and return focus. Verify AI Assistant open/close and GENERAL/FINANCE persist across routes.
+11. Log out during pending requests; sign in as another user and confirm all lists/forms are fresh.
+    Direct access to every finance route without login must redirect to Login.
+
+### Files for Milestone 8C.5
+
+Created (relative to this Angular directory):
+
+```text
+src/app/core/models/budget.model.ts
+src/app/core/models/transaction.model.ts
+src/app/core/models/finance-safety.ts
+src/app/core/services/budget.ts
+src/app/core/services/transaction.ts
+src/app/core/services/finance-changes.ts
+src/app/core/services/finance-crud.spec.ts
+src/app/features/categories/categories.ts
+src/app/features/categories/categories.html
+src/app/features/categories/categories.spec.ts
+src/app/features/transactions/transactions.ts
+src/app/features/transactions/transactions.html
+src/app/features/transactions/transactions.spec.ts
+src/app/features/budgets/budgets.ts
+src/app/features/budgets/budgets.html
+src/app/features/budgets/budgets.spec.ts
+src/app/features/finance/finance-dialog.ts
+src/app/features/finance/finance-dialog.scss
+src/app/features/finance/finance-form.ts
+src/app/features/finance/finance-form.spec.ts
+src/app/features/finance/finance-page.ts
+src/app/features/finance/finance-page.scss
+src/app/features/finance/finance-resource.ts
+src/app/features/finance/finance-resource.spec.ts
+src/app/features/finance/finance.testing.ts
+```
+
+Modified:
+
+```text
+README.md
+src/app/app.routes.ts
+src/app/app.spec.ts
+src/app/core/models/category.model.ts
+src/app/core/models/dashboard.model.ts
+src/app/core/services/category.ts
+src/app/features/dashboard/dashboard.store.ts
+src/app/features/dashboard/dashboard.store.spec.ts
+src/app/layouts/main-layout/main-layout.ts
+src/app/layouts/main-layout/main-layout.html
+```
+
+Suggested commit message:
+
+```text
+feat(finance): add category transaction and budget management
+```
+
 ## Milestone 8C - Live finance dashboard
 
 The Option A dashboard now displays authenticated Spring Boot financial data. It uses only
