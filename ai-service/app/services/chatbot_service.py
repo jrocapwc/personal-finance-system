@@ -5,19 +5,38 @@ from decimal import localcontext
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services.chat_provider import ChatProvider, ProviderUnavailable, log_provider_failure
 from app.services.insight_engine import DISCLAIMER, analyze
-from app.schemas.financial import percentage
+from app.schemas.financial import FinancialSummary, percentage
 
 UNSUPPORTED = ("I can only explain the supplied month's income, expenses, savings, expense categories and budgets. "
                "The supplied data is insufficient to answer that question or perform actions. "
                "Ask about this month's financial summary or practical budgeting improvements.")
 
 
-def supported(question: str) -> bool:
-    text = question.casefold()
-    if re.search(r"\b(buy|sell|invest|investment|stocks?|crypto|tax|legal|transfer|execute|pay|password|secret|token|jwt|ignore|instructions?|transactions?|yesterday|tomorrow|predict|forecast|previous|last|next|weather)\b", text):
+def supported(question: str, financial: FinancialSummary) -> bool:
+    text = " ".join(question.casefold().split())
+    if re.search(r"\b(buy|sell|invest|investment|stocks?|crypto|tax|legal|transfer|execute|password|secret|token|jwt|ignore|instructions?|weather)\b", text):
         return False
-    return bool(re.search(r"\b(income|expenses?|spending|spent|spend|save|savings?|budget|budgets|finances|financial|overview)\b", text)
-                and re.match(r"^(what|how|why|can|could|please|summari[sz]e|explain|show|tell|give|am|do|did|is|are)\b", text))
+    # The fallback has one month's aggregates, not account balances, transaction
+    # details, historical comparisons or the ability to perform payments.
+    if re.search(r"\b(yesterday|tomorrow|predict|forecast)\b|\b(last|previous|next)\s+(month|year|week|day)\b", text):
+        return False
+    if re.search(r"\b(bank|account|wallet)\s+(?:account\s+)?balance\b", text):
+        return False
+    if re.search(r"^(?:please\s+)?pay\b|\b(can|could|would|will)\s+you\s+(?:please\s+)?pay\b", text):
+        return False
+    if re.search(r"\btransactions?\b", text):
+        if re.search(r"\b(how many|count|number of)\b", text):
+            return False
+        if not re.search(r"\b(total|sum|summary|summari[sz]e|overview)\b", text):
+            return False
+    # Topic recognition must not depend on a prescribed sentence opening.
+    # Accept short prompts, everyday money wording and supplied category names.
+    if re.search(r"\b(income|earnings?|earned|salary|expenses?|spending|spent|spend|save|savings?|budgets?|budgeting|finances?|financial|overview|summary|summari[sz]e|money|balance|remaining|left|costs?|bills?|paid|pay)\b", text):
+        return True
+    return any(
+        re.search(r"(?<!\w)" + re.escape(" ".join(entry.categoryName.casefold().split())) + r"(?!\w)", text)
+        for entry in financial.expensesByCategory
+    )
 
 
 GENERAL_DISCLAIMER = "AI-generated responses may contain errors. Verify important information."
@@ -27,7 +46,7 @@ GENERAL_UNAVAILABLE = "General chat is temporarily unavailable. Please try again
 def rule_based_answer(request: ChatRequest) -> str:
     if request.mode == "GENERAL":
         raise ProviderUnavailable()
-    if not supported(request.question):
+    if not supported(request.question, request.financialSummary):
         return UNSUPPORTED
     financial = request.financialSummary
     insights = analyze(financial)

@@ -10,6 +10,11 @@ post {
   auth: none
 }
 
+headers {
+  Content-Type: application/json
+  X-XSRF-TOKEN: 0ff21ffe-1222-48dc-a3e7-d58a5db7977e
+}
+
 body:json {
   {
     "email": "{{email}}",

@@ -81,8 +81,11 @@ def backend(tmp_path_factory):
     java = str(java_home) if java_home.is_file() else shutil.which("java")
     local_node = ROOT / ".tools/node-lts/node_modules/node/bin/node.exe"
     node = os.getenv("QA_NODE_EXECUTABLE") or (str(local_node) if local_node.exists() else shutil.which("node"))
-    jar = ROOT / "core-api/target/core-api-0.0.1-SNAPSHOT.jar"
-    assert java and node and jar.exists(), "Package Spring and install Node 24 LTS before running QA"
+    target = ROOT / "core-api/target"
+    classpath_file = target / "test-runtime-classpath.txt"
+    assert java and node and classpath_file.exists(), "Run Maven verify and install Node 24 LTS before running QA"
+    classpath = os.pathsep.join([str(target / "test-classes"), str(target / "classes"),
+                                 classpath_file.read_text(encoding="utf-8").strip()])
     version = subprocess.check_output([node, "--version"], text=True).strip()
     assert version.startswith("v24."), "QA requires Node 24 LTS"
     core_port, ai_port, node_port = port(), port(), port()
@@ -101,6 +104,8 @@ def backend(tmp_path_factory):
         "SPRING_DATASOURCE_URL": "jdbc:h2:mem:qa_" + uuid4().hex + ";DB_CLOSE_DELAY=-1",
         "SPRING_DATASOURCE_USERNAME": "sa", "SPRING_DATASOURCE_PASSWORD": "",
         "SPRING_DATASOURCE_DRIVER_CLASS_NAME": "org.h2.Driver", "SPRING_H2_CONSOLE_ENABLED": "false",
+        "SPRING_FLYWAY_LOCATIONS": "classpath:db/migration",
+        "SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED_UUID_JDBC_TYPE": "UUID",
         "PYTHONPATH": os.pathsep.join([str(ROOT), str(ROOT / "ai-service")]),
         "LOGGING_LEVEL_ROOT": "WARN", "LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB": "INFO",
     })
@@ -120,7 +125,7 @@ def backend(tmp_path_factory):
         node_process = launch("node", [node, "src/server.js"], ROOT / "integration-service")
         ai_process = launch("ai", [sys.executable, "-m", "uvicorn", "qa.ai_app:create_test_app", "--factory",
                                     "--host", "127.0.0.1", "--port", str(ai_port), "--no-access-log", "--log-level", "warning"], ROOT)
-        launch("core", [java, "-jar", str(jar), f"--server.port={core_port}"], directory)
+        launch("core", [java, "-cp", classpath, "core_api.CoreApiApplication", f"--server.port={core_port}"], directory)
         for name, health in [("node", "/health"), ("ai", "/health"), ("core", "/actuator/health")]:
             deadline = time.monotonic() + 90
             while True:

@@ -1,0 +1,10 @@
+[
+  ["Core API Maven verify", "395 passed; BUILD SUCCESS", "Offline Maven verify using cached dependencies and rwlock-local; 35 test classes; 0 failures/errors/skips. In-memory H2 and mocked upstreams where defined."],
+  ["Python AI suite", "164 passed; 1 skipped", "pytest -q -p no:cacheprovider in ai-service. Real MongoDB integration remains opt-in; no live model call."],
+  ["Node integration suite", "39 passed", "node --test --test-isolation=none. Observed system runtime v25.8.0; package engine declares 24.x."],
+  ["Angular unit suite", "272 passed; 19 files", "ng test --watch=false under workspace Node 24.22.1; rerun outside sandbox after esbuild spawn EPERM."],
+  ["Angular production build", "Passed; exit 0", "ng build under Node 24.22.1. Existing 4 kB style warning budgets exceeded by dashboard 6.75 kB, bank 7.44 kB and assistant 5.16 kB."],
+  ["QA collection / harness suite", "15 passed; 1 failed; 6 skipped", "Failed environment-URL policy: core-api/bruno/Untitled 1.bru vars:pre-request override. Live E2E/browser not enabled."],
+  ["Bruno JavaScript syntax", "36 embedded blocks validated", "node qa/check-bruno.mjs; syntax only. No requests executed."],
+  ["Live integration boundary", "Not executed in this pass", "Live MongoDB, live provider, opt-in multi-process backend/browser E2E, MySQL and deployed-cloud checks are not established by the above tests."]
+]

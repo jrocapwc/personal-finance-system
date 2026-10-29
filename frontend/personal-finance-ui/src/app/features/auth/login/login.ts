@@ -49,7 +49,8 @@ export class Login {
       .subscribe({
         next: () => {
           this.form.reset();
-          if (this.auth.isAuthenticated()) void this.router.navigateByUrl(this.auth.safeReturnUrl(this.returnUrl));
+          if (this.auth.isAuthenticated())
+            void this.router.navigateByUrl(this.auth.safeReturnUrl(this.returnUrl));
         },
         error: (error: unknown) => {
           this.error.set(

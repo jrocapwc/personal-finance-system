@@ -42,8 +42,14 @@
             class="bank-connect-button"
             [class.connected]="isDemoConnected(bank.id)"
             disabled
-            [attr.aria-label]="(isDemoConnected(bank.id) ? 'Demo connected to ' : 'Connect to ') + bank.name"
-            [attr.title]="isDemoConnected(bank.id) ? 'Simulated connection active.' : 'Bank connection coming soon.'"
+            [attr.aria-label]="
+              (isDemoConnected(bank.id) ? 'Demo connected to ' : 'Connect to ') + bank.name
+            "
+            [attr.title]="
+              isDemoConnected(bank.id)
+                ? 'Simulated connection active.'
+                : 'Bank connection coming soon.'
+            "
           >
             @if (isDemoConnected(bank.id)) {
               <mat-icon svgIcon="check_circle" aria-hidden="true"></mat-icon>
@@ -91,8 +97,7 @@
         }}</span>
       </div>
       <div class="demo-balance">
-        <small>Simulated balance &middot; demo data</small
-        >
+        <small>Simulated balance &middot; demo data</small>
         <div class="balance-value">
           <strong>{{ balanceHidden() ? 'PHP ••••••' : 'PHP ' + bank.demoBalance }}</strong>
           <button
@@ -101,8 +106,20 @@
             (click)="balanceHidden.set(!balanceHidden())"
             [attr.aria-label]="balanceHidden() ? 'Show balance' : 'Hide balance'"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <use [attr.href]="balanceHidden() ? 'ui-icons.svg#visibility' : 'ui-icons.svg#visibility_off'"></use>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <use
+                [attr.href]="
+                  balanceHidden() ? 'ui-icons.svg#visibility' : 'ui-icons.svg#visibility_off'
+                "
+              ></use>
             </svg>
             {{ balanceHidden() ? 'Show' : 'Hide' }}
           </button>
